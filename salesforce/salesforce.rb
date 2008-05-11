@@ -4,6 +4,13 @@ gem "dm-core"
 require "data_mapper"
 require "fileutils"
 
+module SalesforceAPI
+  class CreateError < StandardError; end
+  class ReadError   < StandardError; end
+  class DeleteError < StandardError; end
+  class UpdateError < StandardError; end
+end
+
 module DataMapper
   module Adapters
     
@@ -41,8 +48,15 @@ module DataMapper
         private
         def equality_operator(value)
           case value
-          when Array then " IN #{quote_value(value)}"
-          else " = #{quote_value(value)}"
+          when Array then "IN #{quote_value(value)}"
+          else "= #{quote_value(value)}"
+          end
+        end
+        
+        def inequality_operator(value)
+          case value
+          when Array then "NOT IN #{quote_value(value)}"
+          else "!= #{quote_value(value)}"
           end
         end
         
@@ -109,7 +123,12 @@ module DataMapper
 
         DataMapper.logger.debug query_string
         
-        results = @connection.query(:queryString => query_string).result
+        begin
+          results = @connection.query(:queryString => query_string).result
+        rescue SOAP::FaultError => e
+          raise SalesforceAPI::ReadError, e.message
+        end
+          
         results = results.size > 0 ? results.records : []
         
         results.each do |result|
@@ -123,25 +142,62 @@ module DataMapper
         set
       end
       
+      def read(repository, resource, key)
+        read_set(repository, DataMapper::Query.new(repository, resource, 
+          {resource.key(repository.name)[0].name.eql => key[0]})).first
+      end
+      
       def update(repository, resource)
         properties = resource.dirty_attributes
 
         if properties.empty?
           return false
         else
-          klass = SalesforceAPI.const_get(resource.class.storage_name(resource.repository.name))
-          obj = klass.new
-          obj.id = resource.key.first
-          properties.each do |prop|
-            obj.send("#{soap_attr(prop)}=", resource.instance_variable_get(prop.instance_variable_name))
-          end
-
+          obj = make_salesforce_obj(resource, properties, resource.key.first)
           result = @connection.update([obj])
           result[0].success == true
         end
       end
       
+      def create(repository, resource)
+        properties = resource.dirty_attributes
+        
+        obj = make_sforce_obj(resource, properties, nil)
+        
+        results = @connection.create([obj])
+        
+        if results[0].success
+          key = resource.class.key(repository.name).first
+          resource.instance_variable_set(key.instance_variable_name, results[0].id)
+        else
+          raise SalesforceAPI::CreateError, results[0].errors.map {|e| "#{e.statusCode}: #{e.message}"}.join(", ")
+        end
+        
+        true
+      end
+      
+      def delete(repository, resource)
+        key = resource.key.first
+        
+        results = @connection.delete([key])
+        if results[0].success
+          true
+        else
+          raise SalesforceAPI::DeleteError, results[0].errors.map {|e| "#{e.statusCode}: #{e.message}"}.join(", ")
+        end
+      end
+      
       private
+      def make_sforce_obj(resource, props, key = nil)
+        klass = SalesforceAPI.const_get(resource.class.storage_name(resource.repository.name))
+        obj = klass.new
+        obj.id = key if key
+        props.each do |prop|
+          obj.send("#{soap_attr(prop)}=", resource.instance_variable_get(prop.instance_variable_name))
+        end
+        obj
+      end
+      
       def soap_attr(prop)
         prop.field.gsub(/^[A-Z]/) {|m| m.downcase}
       end
