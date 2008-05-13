@@ -18,7 +18,7 @@ module DataMapper
       
       class << self
       
-        def from_condition(condition)
+        def from_condition(condition, repository)
           op, prop, value = condition
           operator = case op
             when String then operator
@@ -35,7 +35,7 @@ module DataMapper
           when Property
             "#{prop.field} #{operator}"
           when Query::Path
-            names = prop.relationships.map {|r| r.parent_model.storage_name}.join(".")
+            names = prop.relationships.map {|r| r.parent_model.storage_name(repository.name)}.join(".")
             names << ".#{prop.field}"
             "#{names} #{operator}"
           end
@@ -106,15 +106,13 @@ module DataMapper
         @connection = SalesforceAPI::Connection.new(URI.unescape(@uri.user), @uri.password, "#{ENV["HOME"]}/.salesforce/#{basename}").driver
       end
       
-      # Supported:
-      #   
       def read_set(repository, query)
         properties = query.fields
         properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
         
         set = Collection.new(repository, query.model, properties_with_indexes)
         
-        conditions = query.conditions.map {|c| SQL.from_condition(c)}.compact.join(") AND (")
+        conditions = query.conditions.map {|c| SQL.from_condition(c, repository)}.compact.join(") AND (")
         
         query_string = "SELECT #{query.fields.map {|f| f.field}.join(", ")} from #{query.model_name}"
         query_string << " WHERE (#{conditions})" unless conditions.empty?
@@ -153,7 +151,7 @@ module DataMapper
         if properties.empty?
           return false
         else
-          obj = make_salesforce_obj(resource, properties, resource.key.first)
+          obj = make_sforce_obj(resource, properties, resource.key.first)
           result = @connection.update([obj])
           result[0].success == true
         end
