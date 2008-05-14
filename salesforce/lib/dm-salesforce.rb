@@ -82,9 +82,9 @@ module DataMapper
       end
       
       def connect!
-        if @uri.host && @uri.path
+        if !@uri.host.empty? && !@uri.path.empty?
           path = File.join(Dir.pwd, @uri.host, @uri.path)
-        elsif @uri.host
+        elsif !@uri.host.empty?
           path = File.join(Dir.pwd, @uri.host)
         else
           path = @uri.path
@@ -95,7 +95,9 @@ module DataMapper
         # Generate Ruby files and move them into .salesforce for future use
         unless File.directory? "#{ENV["HOME"]}/.salesforce/#{basename}"
           old_args = ARGV.dup
-          ARGV.replace %W(--wsdl #{File.expand_path(path)} --module_path SalesforceAPI --classdef SalesforceAPI --type client)
+          path = path =~ %r{^/} ? path : File.expand_path(path)
+          ARGV.replace %W(--wsdl #{path} --module_path SalesforceAPI --classdef SalesforceAPI --type client)
+          p ARGV
           load `which wsdl2ruby.rb`.chomp
           FileUtils.mkdir_p "#{ENV["HOME"]}/.salesforce/#{basename}"
           FileUtils.mv Dir["SalesforceAPI*"], "#{ENV["HOME"]}/.salesforce/#{basename}/"
