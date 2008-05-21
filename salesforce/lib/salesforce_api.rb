@@ -19,7 +19,7 @@ module SalesforceAPI
     @@pushed = false
     
     attr_accessor :driver
-    def initialize(username, password, drivers)
+    def initialize(username, password, drivers = nil)
       $:.push drivers unless @@pushed
       @@pushed = true
       require "SalesforceAPIDriver"
