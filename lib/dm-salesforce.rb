@@ -1,7 +1,4 @@
 $:.push File.expand_path(File.dirname(__FILE__))
-require "rubygems"
-gem "dm-core"
-require "data_mapper"
 require "fileutils"
 
 module SalesforceAPI
