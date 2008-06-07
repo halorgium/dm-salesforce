@@ -24,6 +24,8 @@ spec = Gem::Specification.new do |s|
   
   # Uncomment this to add a dependency
   # s.add_dependency "foo"
+  s.add_dependency "dm-core", ">= 0.9.1"
+  s.add_dependency "extlib"
   
   s.require_path = 'lib'
   s.autorequire = GEM

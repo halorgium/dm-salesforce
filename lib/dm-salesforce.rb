@@ -74,7 +74,7 @@ module DataMapper
       def initialize(name, uri_or_options)
         super
         @resource_naming_convention = proc {|value| value.split("::").last}
-        @field_naming_convention = proc {|value| DataMapper::Inflection.camelize(value)}
+        @field_naming_convention = proc {|value| Extlib::Inflection.camelize(value)}
         connect!
       end
       
@@ -109,7 +109,7 @@ module DataMapper
         properties = query.fields
         properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
         
-        set = Collection.new(repository, query.model, properties_with_indexes)
+        set = Collection.new(query)
         
         conditions = query.conditions.map {|c| SQL.from_condition(c, repository)}.compact.join(") AND (")
         
