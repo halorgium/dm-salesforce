@@ -133,7 +133,7 @@ module DataMapper
             accum[idx] = result.send(soap_attr(prop))
             accum
           end
-          set.load(props, query.reload?)
+          set.load(props)
         end
         
         set
