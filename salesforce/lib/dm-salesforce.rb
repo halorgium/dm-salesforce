@@ -184,6 +184,17 @@ module DataMapper
         end
       end
       
+      # A dummy method to allow migrations without upsetting any data
+      def destroy_model_storage(*args)
+        true
+      end
+      
+      # A dummy method to allow migrations without upsetting any data
+      def create_model_storage(*args)
+        true
+      end
+      
+      
       private
       def make_sforce_obj(resource, props, key = nil)
         klass = SalesforceAPI.const_get(resource.class.storage_name(resource.repository.name))
