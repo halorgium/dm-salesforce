@@ -105,43 +105,43 @@ module DataMapper
         @connection = SalesforceAPI::Connection.new(URI.unescape(@uri.user), @uri.password, "#{ENV["HOME"]}/.salesforce/#{basename}").driver
       end
       
-      def read_set(repository, query)
+      def read_many(query)
+        repository = query.repository
         properties = query.fields
         properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
         
-        set = Collection.new(query)
+        Collection.new(query) do |set|
         
-        conditions = query.conditions.map {|c| SQL.from_condition(c, repository)}.compact.join(") AND (")
+          conditions = query.conditions.map {|c| SQL.from_condition(c, repository)}.compact.join(") AND (")
         
-        query_string = "SELECT #{query.fields.map {|f| f.field}.join(", ")} from #{query.model.storage_name(repository.name)}"
-        query_string << " WHERE (#{conditions})" unless conditions.empty?
-        query_string << " ORDER BY #{SQL.order(query.order[0])}" unless query.order.empty?
-        query_string << " LIMIT #{query.limit}" if query.limit
+          query_string = "SELECT #{query.fields.map {|f| f.field}.join(", ")} from #{query.model.storage_name(repository.name)}"
+          query_string << " WHERE (#{conditions})" unless conditions.empty?
+          query_string << " ORDER BY #{SQL.order(query.order[0])}" unless query.order.empty?
+          query_string << " LIMIT #{query.limit}" if query.limit
 
-        DataMapper.logger.debug query_string
+          DataMapper.logger.debug query_string
         
-        begin
-          results = @connection.query(:queryString => query_string).result
-        rescue SOAP::FaultError => e
-          raise SalesforceAPI::ReadError, e.message
-        end
-          
-        results = results.size > 0 ? results.records : []
-        
-        results.each do |result|
-          props = properties_with_indexes.inject([]) do |accum, (prop, idx)|
-            accum[idx] = result.send(soap_attr(prop))
-            accum
+          begin
+            results = @connection.query(:queryString => query_string).result
+          rescue SOAP::FaultError => e
+            raise SalesforceAPI::ReadError, e.message
           end
-          set.load(props)
-        end
+          
+          results = results.size > 0 ? results.records : []
         
-        set
+          results.each do |result|
+            props = properties_with_indexes.inject([]) do |accum, (prop, idx)|
+              accum[idx] = result.send(soap_attr(prop))
+              accum
+            end
+            set.load(props)
+          end
+        
+        end
       end
       
-      def read(repository, resource, key)
-        read_set(repository, DataMapper::Query.new(repository, resource, 
-          {resource.key(repository.name)[0].name.eql => key[0]})).first
+      def read_one(query)
+        read_many(query).first
       end
       
       def update(repository, resource)
