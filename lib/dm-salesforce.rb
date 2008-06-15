@@ -104,47 +104,23 @@ module DataMapper
         require "salesforce_api"
         @connection = SalesforceAPI::Connection.new(URI.unescape(@uri.user), @uri.password, "#{ENV["HOME"]}/.salesforce/#{basename}").driver
       end
-      
+            
       def read_many(query)
-        repository = query.repository
-        properties = query.fields
-        properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
-        
         Collection.new(query) do |set|
-        
-          conditions = query.conditions.map {|c| SQL.from_condition(c, repository)}.compact.join(") AND (")
-        
-          query_string = "SELECT #{query.fields.map {|f| f.field}.join(", ")} from #{query.model.storage_name(repository.name)}"
-          query_string << " WHERE (#{conditions})" unless conditions.empty?
-          query_string << " ORDER BY #{SQL.order(query.order[0])}" unless query.order.empty?
-          query_string << " LIMIT #{query.limit}" if query.limit
-
-          DataMapper.logger.debug query_string
-        
-          begin
-            results = @connection.query(:queryString => query_string).result
-          rescue SOAP::FaultError => e
-            raise SalesforceAPI::ReadError, e.message
-          end
-          
-          results = results.size > 0 ? results.records : []
-        
-          results.each do |result|
-            props = properties_with_indexes.inject([]) do |accum, (prop, idx)|
-              accum[idx] = result.send(soap_attr(prop, repository))
-              accum
-            end
-            set.load(props)
-          end
-        
+          read(query, set, true)
         end
       end
       
       def read_one(query)
+        read(query, query.model, false)
+      end
+      
+      private
+      def read(query, set, arr = true)
         repository = query.repository
         properties = query.fields
         properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
-        
+
         conditions = query.conditions.map {|c| SQL.from_condition(c, repository)}.compact.join(") AND (")
       
         query_string = "SELECT #{query.fields.map {|f| f.field}.join(", ")} from #{query.model.storage_name(repository.name)}"
@@ -159,20 +135,25 @@ module DataMapper
         rescue SOAP::FaultError => e
           raise SalesforceAPI::ReadError, e.message
         end
+
+        return nil unless results.records
         
-        results = results.size > 0 ? results.records : []
-      
-        result = results.first
-        return nil unless result
-        
-        props = properties_with_indexes.inject([]) do |accum, (prop, idx)|
-          accum[idx] = result.send(soap_attr(prop, repository))
-          accum
+        # This is the core logic that handles the difference between all/first
+        (results.records || []).each do |result|
+          props = props_from_result(properties_with_indexes, result, repository)
+          arr ? set.load(props) : (break set.load(props, query))
         end
-        return query.model.load(props, query)
         
       end
       
+      def props_from_result(properties_with_indexes, result, repo)
+        properties_with_indexes.inject([]) do |accum, (prop, idx)|
+          accum[idx] = result.send(soap_attr(prop, repo))
+          accum
+        end
+      end
+      
+      public
       def update(attributes, query)
         arr = if key_condition = query.conditions.find {|op,prop,val| prop.key?}
           [ make_sforce_obj(query, attributes, key_condition.last) ]
