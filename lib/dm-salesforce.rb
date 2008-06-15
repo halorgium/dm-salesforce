@@ -131,7 +131,7 @@ module DataMapper
         
           results.each do |result|
             props = properties_with_indexes.inject([]) do |accum, (prop, idx)|
-              accum[idx] = result.send(soap_attr(prop))
+              accum[idx] = result.send(soap_attr(prop, repository))
               accum
             end
             set.load(props)
@@ -141,62 +141,99 @@ module DataMapper
       end
       
       def read_one(query)
-        read_many(query).first
-      end
+        repository = query.repository
+        properties = query.fields
+        properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
+        
+        conditions = query.conditions.map {|c| SQL.from_condition(c, repository)}.compact.join(") AND (")
       
-      def update(repository, resource)
-        properties = resource.dirty_attributes
+        query_string = "SELECT #{query.fields.map {|f| f.field}.join(", ")} from #{query.model.storage_name(repository.name)}"
+        query_string << " WHERE (#{conditions})" unless conditions.empty?
+        query_string << " ORDER BY #{SQL.order(query.order[0])}" unless query.order.empty?
+        query_string << " LIMIT #{query.limit}" if query.limit
 
-        if properties.empty?
-          return false
-        else
-          obj = make_sforce_obj(resource, properties, resource.key.first)
-          result = @connection.update([obj])
-          result[0].success == true
-        end
-      end
+        DataMapper.logger.debug query_string
       
-      def create(repository, resource)
-        properties = resource.dirty_attributes
-        
-        obj = make_sforce_obj(resource, properties, nil)
-        
-        results = @connection.create([obj])
-        
-        if results[0].success
-          key = resource.class.key(repository.name).first
-          resource.instance_variable_set(key.instance_variable_name, results[0].id)
-        else
-          raise SalesforceAPI::CreateError, results[0].errors.map {|e| "#{e.statusCode}: #{e.message}"}.join(", ")
+        begin
+          results = @connection.query(:queryString => query_string).result
+        rescue SOAP::FaultError => e
+          raise SalesforceAPI::ReadError, e.message
         end
         
-        true
+        results = results.size > 0 ? results.records : []
+      
+        result = results.first
+        return nil unless result
+        
+        props = properties_with_indexes.inject([]) do |accum, (prop, idx)|
+          accum[idx] = result.send(soap_attr(prop, repository))
+          accum
+        end
+        return query.model.load(props, query)
+        
       end
       
-      def delete(repository, resource)
-        key = resource.key.first
-        
-        results = @connection.delete([key])
-        if results[0].success
-          true
+      def update(attributes, query)
+        arr = if key_condition = query.conditions.find {|op,prop,val| prop.key?}
+          [ make_sforce_obj(query, attributes, key_condition.last) ]
         else
-          raise SalesforceAPI::DeleteError, results[0].errors.map {|e| "#{e.statusCode}: #{e.message}"}.join(", ")
+          read_many(query).map do |obj|
+            obj = make_salesforce_obj(query, attributes, x.key)
+          end
+        end
+        results = @connection.update(arr)
+        results.select {|r| r.success == true}.size
+      end
+      
+      def create(resources)
+        map = {}
+        arr = resources.map do |resource|
+          obj = make_sforce_obj(resource, resource.dirty_attributes, nil)
+        end
+        
+        @connection.create(arr).each_with_index do |result, i|
+          if result.success
+            resource = resources[i]
+            key = resource.class.key(repository.name).first
+            resource.instance_variable_set(key.instance_variable_name, result.id)
+          else
+            raise SalesforceAPI::CreateError, 
+              results.errors.map {|e| "#{e.statusCode}: #{e.message}"}.join(", ")
+          end
+        end.size
+        
+      end
+      
+      def delete(query)
+        keys = if key_condition = query.conditions.find {|op,prop,val| prop.key?}
+          [key_condition.last]
+        else
+          query.read_many.map {|r| r.key}
+        end
+        
+        results = @connection.delete(keys)
+        
+        if results.all? {|r| r.success}
+          results.size
+        else
+          raise SalesforceAPI::DeleteError, 
+            results.find {|r| r.success == false}.errors.map {|e| "#{e.statusCode}: #{e.message}"}.join(", ")
         end
       end
       
       private
-      def make_sforce_obj(resource, props, key = nil)
-        klass = SalesforceAPI.const_get(resource.class.storage_name(resource.repository.name))
+      def make_sforce_obj(query, attrs, key = nil)
+        klass = SalesforceAPI.const_get(query.model.storage_name(query.repository.name))
         obj = klass.new
-        obj.id = key if key
-        props.each do |prop|
-          obj.send("#{soap_attr(prop)}=", resource.instance_variable_get(prop.instance_variable_name))
+        obj.id = query.conditions.find {|op,prop,val| prop.key?}.last if key
+        attrs.each do |prop,val|
+          obj.send("#{soap_attr(prop, query.repository)}=", val)
         end
         obj
       end
       
-      def soap_attr(prop)
-        prop.field.gsub(/^[A-Z]/) {|m| m.downcase}
+      def soap_attr(prop, repository)
+        prop.field(repository.name).gsub(/^[A-Z]/) {|m| m.downcase}
       end
       
     end
