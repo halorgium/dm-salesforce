@@ -39,7 +39,7 @@ module DataMapper
         end
         
         def order(direction)
-          "#{direction.property.field} #{direction.direction.upcase}"
+          "#{direction.property.field} #{direction.direction.to_s.upcase}"
         end
         
         private
