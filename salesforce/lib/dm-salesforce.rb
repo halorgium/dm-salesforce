@@ -30,11 +30,11 @@ module DataMapper
           end
           case prop
           when Property
-            "#{prop.field} #{operator}"
+            "#{Extlib::Inflection.camelize(prop.field)} #{operator}"
           when Query::Path
             rels = prop.relationships
             names = rels.map {|r| storage_name(r, repository) }.join(".")
-            "#{names}.#{prop.field} #{operator}"
+            "#{names}.#{Extlib::Inflection.camelize(prop.field)} #{operator}"
           end
         end
 
@@ -124,7 +124,6 @@ module DataMapper
         repository = query.repository
         properties = query.fields
         properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
-
         conditions = query.conditions.map {|c| SQL.from_condition(c, repository)}.compact.join(") AND (")
       
         query_string = "SELECT #{query.fields.map {|f| @field_naming_convention.call(f.field)}.join(", ")} from #{query.model.storage_name(repository.name)}"
