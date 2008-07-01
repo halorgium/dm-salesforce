@@ -127,7 +127,7 @@ module DataMapper
 
         conditions = query.conditions.map {|c| SQL.from_condition(c, repository)}.compact.join(") AND (")
       
-        query_string = "SELECT #{query.fields.map {|f| f.field}.join(", ")} from #{query.model.storage_name(repository.name)}"
+        query_string = "SELECT #{query.fields.map {|f| @field_naming_convention.call(f.field)}.join(", ")} from #{query.model.storage_name(repository.name)}"
         query_string << " WHERE (#{conditions})" unless conditions.empty?
         query_string << " ORDER BY #{SQL.order(query.order[0])}" unless query.order.empty?
         query_string << " LIMIT #{query.limit}" if query.limit
