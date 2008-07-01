@@ -32,10 +32,14 @@ module DataMapper
           when Property
             "#{prop.field} #{operator}"
           when Query::Path
-            names = prop.relationships.map {|r| r.parent_model.storage_name(repository.name)}.join(".")
-            names << ".#{prop.field}"
-            "#{names} #{operator}"
+            rels = prop.relationships
+            names = rels.map {|r| storage_name(r, repository) }.join(".")
+            "#{names}.#{prop.field} #{operator}"
           end
+        end
+
+        def storage_name(rel, repository)
+          rel.parent_model.storage_name(repository.name)
         end
         
         def order(direction)

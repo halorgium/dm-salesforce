@@ -6,12 +6,12 @@ module SalesforceAPI
 
   class HeaderHandler < SOAP::Header::SimpleHandler
     def initialize(tag, value) 
-      super(XSD::QName.new('urn:partner.soap.sforce.com', tag)) 
+      super(XSD::QName.new('urn:enterprise.soap.sforce.com', tag)) 
       @tag = tag 
       @value = value 
     end 
     def on_simple_outbound 
-      @value 
+      @value
     end 
   end
   
