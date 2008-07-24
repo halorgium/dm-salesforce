@@ -79,7 +79,6 @@ module DataMapper
         super
         @resource_naming_convention = proc {|value| value.split("::").last}
         @field_naming_convention = proc {|value| Extlib::Inflection.camelize(value)}
-        connect!
       end
       
       def connect!
@@ -105,11 +104,11 @@ module DataMapper
         end
         
         require "salesforce_api"
-        @connection = SalesforceAPI::Connection.new(URI.unescape(@uri.user), @uri.password, "#{ENV["HOME"]}/.salesforce/#{basename}").driver
+        SalesforceAPI::Connection.new(URI.unescape(@uri.user), @uri.password, "#{ENV["HOME"]}/.salesforce/#{basename}").driver
       end
       
       def connection
-        @connection || connect!
+        @connection ||= connect!
       end
 
       def read_many(query)
