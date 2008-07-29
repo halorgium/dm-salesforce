@@ -78,7 +78,10 @@ module DataMapper
       def initialize(name, uri_or_options)
         super
         @resource_naming_convention = proc {|value| value.split("::").last}
-        @field_naming_convention = proc {|value| Extlib::Inflection.camelize(value)}
+        @field_naming_convention = proc do |prop|
+          prop = prop.name.to_s if prop.is_a?(Property)
+          Extlib::Inflection.camelize(prop)
+        end
       end
       
       def connect!
