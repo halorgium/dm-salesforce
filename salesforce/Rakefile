@@ -24,8 +24,8 @@ spec = Gem::Specification.new do |s|
   
   # Uncomment this to add a dependency
   # s.add_dependency "foo"
-  s.add_dependency "dm-core", ">= 0.9.1"
-  s.add_dependency "extlib"
+  s.add_dependency "dm-core", ">= 0.9.4"
+  s.add_dependency "extlib", ">= 0.9.4"
   s.add_dependency "soap4r", ">= 1.5.8"
   
   s.require_path = 'lib'
