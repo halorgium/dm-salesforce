@@ -78,7 +78,7 @@ module DataMapper
       def initialize(name, uri_or_options)
         super
         @resource_naming_convention = proc {|value| value.split("::").last}
-        @field_naming_convention = proc {|value| Extlib::Inflection.camelize(value)}
+        @field_naming_convention = proc {|value| Extlib::Inflection.camelize(value.name.to_s)}
         connect!
       end
       
@@ -126,7 +126,7 @@ module DataMapper
         properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
         conditions = query.conditions.map {|c| SQL.from_condition(c, repository)}.compact.join(") AND (")
       
-        query_string = "SELECT #{query.fields.map {|f| @field_naming_convention.call(f.field)}.join(", ")} from #{query.model.storage_name(repository.name)}"
+        query_string = "SELECT #{query.fields.map {|f| f.field(repository.name)}.join(", ")} from #{query.model.storage_name(repository.name)}"
         query_string << " WHERE (#{conditions})" unless conditions.empty?
         query_string << " ORDER BY #{SQL.order(query.order[0])}" unless query.order.empty?
         query_string << " LIMIT #{query.limit}" if query.limit
