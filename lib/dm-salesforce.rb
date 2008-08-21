@@ -79,7 +79,6 @@ module DataMapper
         super
         @resource_naming_convention = proc {|value| value.split("::").last}
         @field_naming_convention = proc {|value| Extlib::Inflection.camelize(value.name.to_s)}
-        connect!
       end
       
       def connect!
@@ -98,7 +97,6 @@ module DataMapper
           old_args = ARGV.dup
           path = path =~ %r{^/} ? path : File.expand_path(path)
           ARGV.replace %W(--wsdl #{path} --module_path SalesforceAPI --classdef SalesforceAPI --type client)
-          p ARGV
           load `which wsdl2ruby.rb`.chomp
           FileUtils.mkdir_p "#{ENV["HOME"]}/.salesforce/#{basename}"
           FileUtils.mv Dir["SalesforceAPI*"], "#{ENV["HOME"]}/.salesforce/#{basename}/"
@@ -106,9 +104,13 @@ module DataMapper
         end
         
         require "salesforce_api"
-        @connection = SalesforceAPI::Connection.new(URI.unescape(@uri.user), @uri.password, "#{ENV["HOME"]}/.salesforce/#{basename}").driver
+        SalesforceAPI::Connection.new(URI.unescape(@uri.user), @uri.password, "#{ENV["HOME"]}/.salesforce/#{basename}").driver
       end
-            
+      
+      def connection
+        @connection ||= connect!
+      end
+
       def read_many(query)
         Collection.new(query) do |set|
           read(query, set, true)
@@ -134,7 +136,7 @@ module DataMapper
         DataMapper.logger.debug query_string
       
         begin
-          results = @connection.query(:queryString => query_string).result
+          results = connection.query(:queryString => query_string).result
         rescue SOAP::FaultError => e
           raise SalesforceAPI::ReadError, e.message
         end
@@ -165,7 +167,7 @@ module DataMapper
             obj = make_salesforce_obj(query, attributes, x.key)
           end
         end
-        results = @connection.update(arr)
+        results = connection.update(arr)
         results.select {|r| r.success == true}.size
       end
       
@@ -175,7 +177,7 @@ module DataMapper
           obj = make_sforce_obj(resource, resource.dirty_attributes, nil)
         end
         
-        @connection.create(arr).each_with_index do |result, i|
+        connection.create(arr).each_with_index do |result, i|
           if result.success
             resource = resources[i]
             key = resource.class.key(repository.name).first
@@ -195,7 +197,7 @@ module DataMapper
           query.read_many.map {|r| r.key}
         end
         
-        results = @connection.delete(keys)
+        results = connection.delete(keys)
         
         if results.all? {|r| r.success}
           results.size
