@@ -4,7 +4,7 @@ require 'rubygems/specification'
 require 'date'
 
 GEM = "dm-salesforce"
-GEM_VERSION = "0.9.1"
+GEM_VERSION = "0.9.2"
 AUTHOR = "Yehuda Katz"
 EMAIL = "wycats@gmail.com"
 HOMEPAGE = "http://www.yehudakatz.com"
@@ -24,9 +24,9 @@ spec = Gem::Specification.new do |s|
   
   # Uncomment this to add a dependency
   # s.add_dependency "foo"
-  s.add_dependency "dm-core", ">= 0.9.4"
-  s.add_dependency "extlib", ">= 0.9.4"
-  s.add_dependency "soap4r", ">= 1.5.8"
+  s.add_dependency "dm-core", "~> 0.9.4"
+  s.add_dependency "extlib", "~> 0.9.4"
+  s.add_dependency "soap4r", "~> 1.5.8"
   
   s.require_path = 'lib'
   s.autorequire = GEM
