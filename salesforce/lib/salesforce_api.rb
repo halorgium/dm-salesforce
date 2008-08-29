@@ -1,6 +1,7 @@
 gem "soap4r", ">= 1.5.8"
 require 'soap/wsdlDriver'
 require 'soap/header/simplehandler'
+require "rexml/element"
 
 module SalesforceAPI
 
@@ -16,14 +17,8 @@ module SalesforceAPI
   end
   
   class Connection
-    @@pushed = false
-    
     attr_accessor :driver
-    def initialize(username, password, drivers = nil)
-      $:.push drivers unless @@pushed
-      @@pushed = true
-      require "SalesforceAPIDriver"
-      
+    def initialize(username, password)      
       @driver = SalesforceAPI::Soap.new
       begin
         result = driver.login(:username => username, :password => password).result
