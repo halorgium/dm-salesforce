@@ -2,10 +2,11 @@ $:.push File.expand_path(File.dirname(__FILE__))
 require "fileutils"
 
 module SalesforceAPI
-  class CreateError < StandardError; end
-  class ReadError   < StandardError; end
-  class DeleteError < StandardError; end
-  class UpdateError < StandardError; end
+  class CreateError   < StandardError; end
+  class ReadError     < StandardError; end
+  class DeleteError   < StandardError; end
+  class UpdateError   < StandardError; end
+  class FieldNotFound < StandardError; end
 end
 
 module DataMapper
@@ -30,11 +31,11 @@ module DataMapper
           end
           case prop
           when Property
-            "#{Extlib::Inflection.camelize(prop.field)} #{operator}"
+            "#{prop.field} #{operator}"
           when Query::Path
             rels = prop.relationships
             names = rels.map {|r| storage_name(r, repository) }.join(".")
-            "#{names}.#{Extlib::Inflection.camelize(prop.field)} #{operator}"
+            "#{names}.#{prop.field} #{operator}"
           end
         end
 
@@ -77,11 +78,32 @@ module DataMapper
       
       def initialize(name, uri_or_options)
         super
+        
+        generate_soap_classes
+        
         @resource_naming_convention = proc {|value| value.split("::").last}
-        @field_naming_convention = proc {|value| Extlib::Inflection.camelize(value.name.to_s)}
+        @field_naming_convention = proc do |value|
+          klass = SalesforceAPI.const_get(value.model.storage_name(name))
+          fields = [Extlib::Inflection.camelize(value.name.to_s), "#{value.name.to_s}__c"]
+          options = /^(#{fields.join("|")})$/i
+          
+          if field = klass.instance_methods(false).grep(options)
+            field[0]
+          else
+            raise SalesforceAPI::FieldNotFound, 
+              "You specified #{value.name} as a field, but neither #{fields.join(" or ")} exist. " \
+              "Either manually specify the field name with :field, or check to make sure you have " \
+              "provided a correct field name."
+          end
+          # if value.extra_options[:custom]
+          #   "#{value.name.to_s.gsub(/(^|_)[a-z]/) {|m| m.upcase}}__c"
+          # else
+          #   Extlib::Inflection.camelize(value.name.to_s)
+          # end
+        end
       end
       
-      def connect!
+      def generate_soap_classes
         if !@uri.host.empty? && !@uri.path.empty?
           path = File.join(Dir.pwd, @uri.host, @uri.path)
         elsif !@uri.host.empty?
@@ -93,18 +115,26 @@ module DataMapper
         basename = File.basename(path)
 
         # Generate Ruby files and move them into .salesforce for future use
-        unless File.directory? "#{ENV["HOME"]}/.salesforce/#{basename}"
-          old_args = ARGV.dup
-          path = path =~ %r{^/} ? path : File.expand_path(path)
-          ARGV.replace %W(--wsdl #{path} --module_path SalesforceAPI --classdef SalesforceAPI --type client)
-          load `which wsdl2ruby.rb`.chomp
-          FileUtils.mkdir_p "#{ENV["HOME"]}/.salesforce/#{basename}"
-          FileUtils.mv Dir["SalesforceAPI*"], "#{ENV["HOME"]}/.salesforce/#{basename}/"
-          FileUtils.rm Dir["SforceServiceClient.rb"]
+        unless File.directory?("#{ENV["HOME"]}/.salesforce/#{basename}") &&
+          Dir["#{ENV["HOME"]}/.salesforce/#{basename}/SalesforceAPI*.rb"].size == 3
+            old_args = ARGV.dup
+            path = path =~ %r{^/} ? path : File.expand_path(path)
+            require "pp"
+            pp path
+            ARGV.replace %W(--wsdl #{path} --module_path SalesforceAPI --classdef SalesforceAPI --type client)
+            load `which wsdl2ruby.rb`.chomp
+            FileUtils.mkdir_p "#{ENV["HOME"]}/.salesforce/#{basename}"
+            FileUtils.mv Dir["SalesforceAPI*"], "#{ENV["HOME"]}/.salesforce/#{basename}/"
+            FileUtils.rm Dir["SforceServiceClient.rb"]
         end
         
         require "salesforce_api"
-        SalesforceAPI::Connection.new(URI.unescape(@uri.user), @uri.password, "#{ENV["HOME"]}/.salesforce/#{basename}").driver
+        $:.push "#{ENV["HOME"]}/.salesforce/#{basename}"
+        require "SalesforceAPIDriver"
+      end
+      
+      def connect!
+        SalesforceAPI::Connection.new(URI.unescape(@uri.user), @uri.password).driver
       end
       
       def connection
@@ -153,7 +183,8 @@ module DataMapper
       
       def props_from_result(properties_with_indexes, result, repo)
         properties_with_indexes.inject([]) do |accum, (prop, idx)|
-          accum[idx] = result.send(soap_attr(prop, repo))
+          meth = soap_attr(prop, repo, result.class)
+          accum[idx] = result.send(meth)
           accum
         end
       end
@@ -224,13 +255,15 @@ module DataMapper
         obj = klass.new
         obj.id = query.conditions.find {|op,prop,val| prop.key?}.last if key
         attrs.each do |prop,val|
-          obj.send("#{soap_attr(prop, query.repository)}=", val)
+          obj.send("#{soap_attr(prop, query.repository, obj.class)}=", val)
         end
         obj
       end
       
-      def soap_attr(prop, repository)
-        prop.field(repository.name).gsub(/^[A-Z]/) {|m| m.downcase}
+      def soap_attr(prop, repository, klass)
+        meth = klass.instance_methods.
+          grep(/^#{prop.field(repository.name)}$/i)
+        meth && !meth.empty? ? meth[0] : meth
       end
       
     end
