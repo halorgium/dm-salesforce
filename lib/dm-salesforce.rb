@@ -119,8 +119,9 @@ module DataMapper
           Dir["#{ENV["HOME"]}/.salesforce/#{basename}/SalesforceAPI*.rb"].size == 3
             old_args = ARGV.dup
             path = path =~ %r{^/} ? path : File.expand_path(path)
-            require "pp"
-            pp path
+            if !File.file?(path)
+              raise Errno::ENOENT, "No such file or directory - #{path}"
+            end
             ARGV.replace %W(--wsdl #{path} --module_path SalesforceAPI --classdef SalesforceAPI --type client)
             load `which wsdl2ruby.rb`.chomp
             FileUtils.mkdir_p "#{ENV["HOME"]}/.salesforce/#{basename}"
