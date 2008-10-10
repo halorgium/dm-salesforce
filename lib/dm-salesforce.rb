@@ -144,16 +144,20 @@ module DataMapper
 
       def read_many(query)
         Collection.new(query) do |set|
-          read(query, set, true)
+          read(query) do |result|
+            set.load(result)
+          end
         end
       end
       
       def read_one(query)
-        read(query, query.model, false)
+        read(query) do |result|
+          return query.model.load(result, query)
+        end
       end
       
       private
-      def read(query, set, arr = true)
+      def read(query, &block)
         repository = query.repository
         properties = query.fields
         properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
@@ -172,14 +176,12 @@ module DataMapper
           raise SalesforceAPI::ReadError, e.message
         end
 
-        return nil unless results.records
+        return unless results.records
         
         # This is the core logic that handles the difference between all/first
         (results.records || []).each do |result|
-          props = props_from_result(properties_with_indexes, result, repository)
-          arr ? set.load(props) : (break set.load(props, query))
+          yield props_from_result(properties_with_indexes, result, repository)
         end
-        
       end
       
       def props_from_result(properties_with_indexes, result, repo)
