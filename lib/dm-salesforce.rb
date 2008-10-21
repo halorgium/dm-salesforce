@@ -84,22 +84,18 @@ module DataMapper
         @resource_naming_convention = proc {|value| value.split("::").last}
         @field_naming_convention = proc do |value|
           klass = SalesforceAPI.const_get(value.model.storage_name(name))
-          fields = [Extlib::Inflection.camelize(value.name.to_s), "#{value.name.to_s}__c"]
+          column = value.name.to_s
+          fields = [column, column.camel_case, "#{column}__c".downcase]
           options = /^(#{fields.join("|")})$/i
-          
-          if field = klass.instance_methods(false).grep(options)
-            field[0]
+          matches = klass.instance_methods(false).grep(options)
+          if matches.any?
+            matches.first
           else
             raise SalesforceAPI::FieldNotFound, 
-              "You specified #{value.name} as a field, but neither #{fields.join(" or ")} exist. " \
+              "You specified #{column} as a field, but neither #{fields.join(" or ")} exist. " \
               "Either manually specify the field name with :field, or check to make sure you have " \
               "provided a correct field name."
           end
-          # if value.extra_options[:custom]
-          #   "#{value.name.to_s.gsub(/(^|_)[a-z]/) {|m| m.upcase}}__c"
-          # else
-          #   Extlib::Inflection.camelize(value.name.to_s)
-          # end
         end
       end
       
