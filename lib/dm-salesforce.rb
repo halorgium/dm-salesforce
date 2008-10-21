@@ -81,7 +81,14 @@ module DataMapper
         
         generate_soap_classes
         
-        @resource_naming_convention = proc {|value| value.split("::").last}
+        @resource_naming_convention = proc do |value|
+          klass = Extlib::Inflection.constantize(value)
+          if klass.respond_to?(:salesforce_class)
+            klass.salesforce_class
+          else
+            value.split("::").last
+          end
+        end
         @field_naming_convention = proc do |value|
           klass = SalesforceAPI.const_get(value.model.storage_name(name))
           column = value.name.to_s
