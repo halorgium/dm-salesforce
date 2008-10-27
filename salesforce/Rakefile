@@ -4,7 +4,7 @@ require 'rubygems/specification'
 require 'date'
 
 GEM = "dm-salesforce"
-GEM_VERSION = "0.9.4"
+GEM_VERSION = "0.9.5"
 AUTHOR = "Yehuda Katz"
 EMAIL = "wycats@gmail.com"
 HOMEPAGE = "http://www.yehudakatz.com"
