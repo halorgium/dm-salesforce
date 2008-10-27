@@ -7,6 +7,7 @@ module SalesforceAPI
   class DeleteError   < StandardError; end
   class UpdateError   < StandardError; end
   class FieldNotFound < StandardError; end
+  class LoginFailed   < StandardError; end
 end
 
 module DataMapper
@@ -144,7 +145,21 @@ module DataMapper
       def connection
         @connection ||= connect!
       end
-
+      
+      def call_salesforce(method, *args)
+        connection.send(method, *args)
+      rescue StandardError => e
+        count ||= 0
+        if e.message =~ /INVALID_SESSION_ID/
+          @connection = connect!
+          count += 1
+          retry unless count > 5
+        elsif e.message =~ /Destination URL not reset/
+          raise SalesforceAPI::LoginFailed, "The username or password is incorrect"
+        end
+        raise e
+      end
+      
       def read_many(query)
         Collection.new(query) do |set|
           read(query) do |result|
@@ -174,7 +189,7 @@ module DataMapper
         DataMapper.logger.debug query_string
       
         begin
-          results = connection.query(:queryString => query_string).result
+          results = call_salesforce(:query, :queryString => query_string).result
         rescue SOAP::FaultError => e
           raise SalesforceAPI::ReadError, e.message
         end
@@ -204,7 +219,7 @@ module DataMapper
             obj = make_salesforce_obj(query, attributes, x.key)
           end
         end
-        results = connection.update(arr)
+        results = call_salesforce(:update, arr)
         results.select {|r| r.success == true}.size
       end
       
@@ -214,7 +229,7 @@ module DataMapper
           obj = make_sforce_obj(resource, resource.dirty_attributes, nil)
         end
         
-        connection.create(arr).each_with_index do |result, i|
+        call_salesforce(:create, arr).each_with_index do |result, i|
           if result.success
             resource = resources[i]
             key = resource.class.key(repository.name).first
@@ -234,7 +249,7 @@ module DataMapper
           query.read_many.map {|r| r.key}
         end
         
-        results = connection.delete(keys)
+        results = call_salesforce(:delete, keys)
         
         if results.all? {|r| r.success}
           results.size
