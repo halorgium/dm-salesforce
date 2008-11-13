@@ -2,12 +2,12 @@
 
 Gem::Specification.new do |s|
   s.name = %q{dm-salesforce}
-  s.version = "0.9.5"
+  s.version = "0.9.6"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Yehuda Katz"]
   s.autorequire = %q{dm-salesforce}
-  s.date = %q{2008-10-22}
+  s.date = %q{2008-11-13}
   s.description = %q{A DataMapper adapter to the Salesforce API}
   s.email = %q{wycats@gmail.com}
   s.extra_rdoc_files = ["README.markdown", "LICENSE"]
