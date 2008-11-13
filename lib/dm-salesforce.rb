@@ -1,22 +1,11 @@
 $:.push File.expand_path(File.dirname(__FILE__))
 require "fileutils"
-
-module SalesforceAPI
-  class CreateError   < StandardError; end
-  class ReadError     < StandardError; end
-  class DeleteError   < StandardError; end
-  class UpdateError   < StandardError; end
-  class FieldNotFound < StandardError; end
-  class LoginFailed   < StandardError; end
-end
+require "salesforce_api"
 
 module DataMapper
   module Adapters
-    
     module SQL
-      
       class << self
-      
         def from_condition(condition, repository)
           op, prop, value = condition
           operator = case op
@@ -43,11 +32,11 @@ module DataMapper
         def storage_name(rel, repository)
           rel.parent_model.storage_name(repository.name)
         end
-        
+
         def order(direction)
           "#{direction.property.field} #{direction.direction.to_s.upcase}"
         end
-        
+
         private
         def equality_operator(value)
           case value
@@ -55,14 +44,14 @@ module DataMapper
           else "= #{quote_value(value)}"
           end
         end
-        
+
         def inequality_operator(value)
           case value
           when Array then "NOT IN #{quote_value(value)}"
           else "!= #{quote_value(value)}"
           end
         end
-        
+
         def quote_value(value)
           case value
           when Array then "(#{value.map {|v| quote_value(v)}.join(", ")})"
@@ -70,18 +59,13 @@ module DataMapper
           when String then "'#{value.gsub(/'/, "\\'").gsub(/\\/, %{\\\\})}'"
           else "#{value}"
           end
-        end        
+        end
       end
-      
     end
-    
+
     class SalesforceAdapter < AbstractAdapter
-      
       def initialize(name, uri_or_options)
         super
-        
-        generate_soap_classes
-        
         @resource_naming_convention = proc do |value|
           klass = Extlib::Inflection.constantize(value)
           if klass.respond_to?(:salesforce_class)
@@ -90,76 +74,35 @@ module DataMapper
             value.split("::").last
           end
         end
-        @field_naming_convention = proc do |value|
-          klass = SalesforceAPI.const_get(value.model.storage_name(name))
-          column = value.name.to_s
-          fields = [column, column.camel_case, "#{column}__c".downcase]
-          options = /^(#{fields.join("|")})$/i
-          matches = klass.instance_methods(false).grep(options)
-          if matches.any?
-            matches.first
-          else
-            raise SalesforceAPI::FieldNotFound, 
-              "You specified #{column} as a field, but neither #{fields.join(" or ")} exist. " \
-              "Either manually specify the field name with :field, or check to make sure you have " \
-              "provided a correct field name."
-          end
+        @field_naming_convention = proc do |property|
+          connection.field_name_for(property.model.storage_name(name), property.name.to_s)
         end
       end
-      
-      def generate_soap_classes
-        if !@uri.host.empty? && !@uri.path.empty?
-          path = File.join(Dir.pwd, @uri.host, @uri.path)
-        elsif !@uri.host.empty?
-          path = File.join(Dir.pwd, @uri.host)
-        else
-          path = @uri.path
+
+      def normalize_uri(uri_or_options)
+        if uri_or_options.kind_of?(Addressable::URI)
+          return uri_or_options
         end
 
-        basename = File.basename(path)
-
-        # Generate Ruby files and move them into .salesforce for future use
-        unless File.directory?("#{ENV["HOME"]}/.salesforce/#{basename}") &&
-          Dir["#{ENV["HOME"]}/.salesforce/#{basename}/SalesforceAPI*.rb"].size == 3
-            old_args = ARGV.dup
-            path = path =~ %r{^/} ? path : File.expand_path(path)
-            if !File.file?(path)
-              raise Errno::ENOENT, "No such file or directory - #{path}"
-            end
-            ARGV.replace %W(--wsdl #{path} --module_path SalesforceAPI --classdef SalesforceAPI --type client)
-            load `which wsdl2ruby.rb`.chomp
-            FileUtils.mkdir_p "#{ENV["HOME"]}/.salesforce/#{basename}"
-            FileUtils.mv Dir["SalesforceAPI*"], "#{ENV["HOME"]}/.salesforce/#{basename}/"
-            FileUtils.rm Dir["SforceServiceClient.rb"]
+        if uri_or_options.kind_of?(String)
+          uri_or_options = Addressable::URI.parse(uri_or_options)
         end
-        
-        require "salesforce_api"
-        $:.push "#{ENV["HOME"]}/.salesforce/#{basename}"
-        require "SalesforceAPIDriver"
+
+        adapter  = uri_or_options.delete(:adapter).to_s
+        user     = uri_or_options.delete(:username)
+        password = uri_or_options.delete(:password)
+        host     = uri_or_options.delete(:host) || "."
+        path     = uri_or_options.delete(:path)
+        query    = uri_or_options.to_a.map { |pair| pair * '=' } * '&'
+        query    = nil if query == ''
+
+        return Addressable::URI.new(adapter, user, password, host, nil, path, query, nil)
       end
-      
-      def connect!
-        SalesforceAPI::Connection.new(URI.unescape(@uri.user), @uri.password).driver
-      end
-      
+
       def connection
-        @connection ||= connect!
+        @connection ||= SalesforceAPI::Connection.new(@uri.user, @uri.password, @uri.host + @uri.path)
       end
-      
-      def call_salesforce(method, *args)
-        connection.send(method, *args)
-      rescue StandardError => e
-        count ||= 0
-        if e.message =~ /INVALID_SESSION_ID/
-          @connection = connect!
-          count += 1
-          retry unless count > 5
-        elsif e.message =~ /Destination URL not reset/
-          raise SalesforceAPI::LoginFailed, "The username or password is incorrect"
-        end
-        raise e
-      end
-      
+
       def read_many(query)
         Collection.new(query) do |set|
           read(query) do |result|
@@ -167,127 +110,95 @@ module DataMapper
           end
         end
       end
-      
+
       def read_one(query)
         read(query) do |result|
           return query.model.load(result, query)
         end
       end
-      
-      private
-      def read(query, &block)
-        repository = query.repository
-        properties = query.fields
-        properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
-        conditions = query.conditions.map {|c| SQL.from_condition(c, repository)}.compact.join(") AND (")
-      
-        query_string = "SELECT #{query.fields.map {|f| f.field(repository.name)}.join(", ")} from #{query.model.storage_name(repository.name)}"
-        query_string << " WHERE (#{conditions})" unless conditions.empty?
-        query_string << " ORDER BY #{SQL.order(query.order[0])}" unless query.order.empty?
-        query_string << " LIMIT #{query.limit}" if query.limit
 
-        DataMapper.logger.debug query_string
-      
-        begin
-          results = call_salesforce(:query, :queryString => query_string).result
-        rescue SOAP::FaultError => e
-          raise SalesforceAPI::ReadError, e.message
+      def create(resources)
+        arr = resources.map do |resource|
+          obj = make_salesforce_obj(resource, resource.dirty_attributes, nil)
         end
 
-        return unless results.records
-        
-        # This is the core logic that handles the difference between all/first
-        (results.records || []).each do |result|
-          yield props_from_result(properties_with_indexes, result, repository)
+        result = connection.create(arr)
+        result.each_with_index do |record, i|
+          resource = resources[i]
+          key = resource.class.key(repository.name).first
+          resource.instance_variable_set(key.instance_variable_name, record.id)
         end
+        result.size
       end
-      
-      def props_from_result(properties_with_indexes, result, repo)
-        properties_with_indexes.inject([]) do |accum, (prop, idx)|
-          meth = soap_attr(prop, repo, result.class)
-          accum[idx] = result.send(meth)
-          accum
-        end
-      end
-      
-      public
+
       def update(attributes, query)
         arr = if key_condition = query.conditions.find {|op,prop,val| prop.key?}
-          [ make_sforce_obj(query, attributes, key_condition.last) ]
+          [ make_salesforce_obj(query, attributes, key_condition.last) ]
         else
           read_many(query).map do |obj|
             obj = make_salesforce_obj(query, attributes, x.key)
           end
         end
-        results = call_salesforce(:update, arr)
-        results.select {|r| r.success == true}.size
+        connection.update(arr).size
       end
-      
-      def create(resources)
-        map = {}
-        arr = resources.map do |resource|
-          obj = make_sforce_obj(resource, resource.dirty_attributes, nil)
-        end
-        
-        call_salesforce(:create, arr).each_with_index do |result, i|
-          if result.success
-            resource = resources[i]
-            key = resource.class.key(repository.name).first
-            resource.instance_variable_set(key.instance_variable_name, result.id)
-          else
-            raise SalesforceAPI::CreateError, 
-              results.errors.map {|e| "#{e.statusCode}: #{e.message}"}.join(", ")
-          end
-        end.size
-        
-      end
-      
+
       def delete(query)
         keys = if key_condition = query.conditions.find {|op,prop,val| prop.key?}
           [key_condition.last]
         else
           query.read_many.map {|r| r.key}
         end
-        
-        results = call_salesforce(:delete, keys)
-        
-        if results.all? {|r| r.success}
-          results.size
-        else
-          raise SalesforceAPI::DeleteError, 
-            results.find {|r| r.success == false}.errors.map {|e| "#{e.statusCode}: #{e.message}"}.join(", ")
-        end
+
+        connection.delete(keys).size
       end
-      
+
       # A dummy method to allow migrations without upsetting any data
       def destroy_model_storage(*args)
         true
       end
-      
+
       # A dummy method to allow migrations without upsetting any data
       def create_model_storage(*args)
         true
       end
-      
-      
+
       private
-      def make_sforce_obj(query, attrs, key = nil)
-        klass = SalesforceAPI.const_get(query.model.storage_name(query.repository.name))
-        obj = klass.new
-        obj.id = query.conditions.find {|op,prop,val| prop.key?}.last if key
-        attrs.each do |prop,val|
-          obj.send("#{soap_attr(prop, query.repository, obj.class)}=", val)
+      def read(query, &block)
+        repository = query.repository
+        properties = query.fields
+        properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
+        conditions = query.conditions.map {|c| SQL.from_condition(c, repository)}.compact.join(") AND (")
+
+        sql = "SELECT #{query.fields.map {|f| f.field(repository.name)}.join(", ")} from #{query.model.storage_name(repository.name)}"
+        sql << " WHERE (#{conditions})" unless conditions.empty?
+        sql << " ORDER BY #{SQL.order(query.order[0])}" unless query.order.empty?
+        sql << " LIMIT #{query.limit}" if query.limit
+
+        DataMapper.logger.debug sql
+
+        result = connection.query(sql)
+
+        return unless result.records
+
+        result.records.each do |record|
+          accum = []
+          properties_with_indexes.each do |(property, idx)|
+            meth = connection.field_name_for(property.model.storage_name(repository.name), property.field(repository.name))
+            accum[idx] = record.send(meth)
+          end
+          yield accum
         end
-        obj
       end
-      
-      def soap_attr(prop, repository, klass)
-        meth = klass.instance_methods.
-          grep(/^#{prop.field(repository.name)}$/i)
-        meth && !meth.empty? ? meth[0] : meth
+
+      def make_salesforce_obj(query, attrs, key)
+        klass_name = query.model.storage_name(query.repository.name)
+        values = {}
+        values["id"] = query.conditions.find {|op,prop,val| prop.key?}.last if key
+        attrs.each do |property,value|
+          values[property.field(query.repository.name)] = value
+        end
+        connection.make_object(klass_name, values)
       end
-      
     end
-    
   end
 end
