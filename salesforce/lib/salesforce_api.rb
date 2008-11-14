@@ -12,7 +12,7 @@ module SalesforceAPI
 
     class SOAPError      < Error
       def initialize(message, result)
-        @result = results
+        @result = result
         super("#{message}: #{result_message}")
       end
 
@@ -46,9 +46,14 @@ module SalesforceAPI
       end
     end
 
-    def initialize(username, password, wsdl_path)
-      @username, @password, @wsdl_path = URI.unescape(username), password, File.expand_path(wsdl_path)
+    def initialize(username, password, wsdl_path, organization_id = nil)
+      @username, @password, @wsdl_path, @organization_id = URI.unescape(username), password, File.expand_path(wsdl_path), organization_id
       driver
+    end
+    attr_reader :wsdl_path, :user_id, :user_details
+
+    def organization_id
+      @user_details && @user_details.organizationId
     end
 
     def make_object(klass_name, values)
@@ -81,7 +86,7 @@ module SalesforceAPI
         driver.query(:queryString => string).result
       end
     rescue SOAP::FaultError => e
-      raise QueryError.new(e.message)
+      raise QueryError.new(e.message, [])
     end
 
     def create(objects)
@@ -100,6 +105,10 @@ module SalesforceAPI
     def login
       generate_soap_classes
       driver = Soap.new
+      if @organization_id
+        driver.headerhandler << HeaderHandler.new("LoginScopeHeader", :organizationId => @organization_id)
+      end
+
       begin
         result = driver.login(:username => @username, :password => @password).result
       rescue SOAP::FaultError => e
@@ -112,6 +121,7 @@ module SalesforceAPI
       driver.endpoint_url = result.serverUrl
       driver.headerhandler << HeaderHandler.new("SessionHeader", "sessionId" => result.sessionId)
       driver.headerhandler << HeaderHandler.new("CallOptions", "client" => "client")
+      @user_id = result.userId
       @user_details = result.userInfo
       driver
     end
@@ -120,13 +130,13 @@ module SalesforceAPI
       @driver ||= login
     end
 
-    def call_salesforce(method, exception_class, message, args)
+    def call_api(method, exception_class, message, args)
       with_reconnection do
         result = driver.send(method, args)
         if result.all? {|r| r.success}
           result
         else
-          raise exception_class.new("Got some errors while creating Salesforce objects", result)
+          raise exception_class.new("Got some errors while #{message} Salesforce objects", result)
         end
       end
     end
