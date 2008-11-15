@@ -187,7 +187,7 @@ module SalesforceAPI
 
     def fetch_exceptionCode(fault)
       if detail = fault.faultcode.parent.detail
-        if soap_fault = detail["fault"]
+        if soap_fault = detail["LoginFault"] || detail["fault"]
           if exceptionCode = soap_fault["exceptionCode"]
             exceptionCode.text
           end
