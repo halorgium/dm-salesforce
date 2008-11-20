@@ -96,7 +96,7 @@ module DataMapper
         query    = uri_or_options.to_a.map { |pair| pair * '=' } * '&'
         query    = nil if query == ''
 
-        return Addressable::URI.new(adapter, user, password, host, nil, path, query, nil)
+        return Addressable::URI.new({:adapter => adapter, :user => user, :password => password, :host => host, :path => path, :query => query})
       end
 
       def connection
