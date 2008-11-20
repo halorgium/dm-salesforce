@@ -111,9 +111,9 @@ module SalesforceAPI
 
       begin
         result = driver.login(:username => @username, :password => @password).result
-      rescue SOAP::FaultError => e
-        if fetch_exceptionCode(e) == "INVALID_LOGIN"
-          raise LoginFailed, "Could not login to Salesforce; #{e.faultstring.text}"
+      rescue SOAP::FaultError => error
+        if error.faultcode.to_obj == "sf:INVALID_LOGIN"
+          raise LoginFailed, "Could not login to Salesforce; #{error.faultstring.text}"
         else
           raise
         end
@@ -170,9 +170,9 @@ module SalesforceAPI
 
     def with_reconnection(&block)
       yield
-    rescue SOAP::FaultError => fault
+    rescue SOAP::FaultError => error
       retry_count ||= 0
-      if fetch_exceptionCode(fault) == "INVALID_SESSION_ID"
+      if error.faultcode.text == "sf:INVALID_SESSION_ID"
         $stderr.puts "Got a invalid session id; reconnecting"
         @driver = nil
         login
@@ -183,16 +183,6 @@ module SalesforceAPI
       end
 
       raise SessionTimeout, "The Salesforce session could not be established"
-    end
-
-    def fetch_exceptionCode(fault)
-      if detail = fault.faultcode.parent.detail
-        if soap_fault = detail["LoginFault"] || detail["fault"]
-          if exceptionCode = soap_fault["exceptionCode"]
-            exceptionCode.text
-          end
-        end
-      end
     end
   end
 end
