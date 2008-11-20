@@ -2,20 +2,20 @@
 
 Gem::Specification.new do |s|
   s.name = %q{dm-salesforce}
-  s.version = "0.9.6.1"
+  s.version = "0.9.7"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Yehuda Katz"]
   s.autorequire = %q{dm-salesforce}
-  s.date = %q{2008-11-14}
+  s.date = %q{2008-11-19}
   s.description = %q{A DataMapper adapter to the Salesforce API}
   s.email = %q{wycats@gmail.com}
   s.extra_rdoc_files = ["README.markdown", "LICENSE"]
-  s.files = ["LICENSE", "README.markdown", "Rakefile", "lib/salesforce_api.rb", "lib/dm-salesforce.rb"]
+  s.files = ["LICENSE", "README.markdown", "Rakefile", "lib/dm-salesforce.rb", "lib/salesforce_api.rb"]
   s.has_rdoc = true
   s.homepage = %q{http://www.yehudakatz.com}
   s.require_paths = ["lib"]
-  s.rubygems_version = %q{1.3.0}
+  s.rubygems_version = %q{1.3.1}
   s.summary = %q{A DataMapper adapter to the Salesforce API}
 
   if s.respond_to? :specification_version then
