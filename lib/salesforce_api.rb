@@ -26,7 +26,7 @@ module SalesforceAPI
         end.join("; ")
       end
 
-      def message_for_record(result)
+      def message_for_record(record)
         record.errors.map {|e| "#{e.statusCode}: #{e.message}"}.join(", ")
       end
     end
