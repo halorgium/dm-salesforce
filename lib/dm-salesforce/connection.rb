@@ -1,9 +1,9 @@
-gem "soap4r", ">= 1.5.8"
 require 'soap/wsdlDriver'
 require 'soap/header/simplehandler'
 require "rexml/element"
+require "fileutils"
 
-module SalesforceAPI
+module DataMapperSalesforce
   class Connection
     class Error          < StandardError; end
     class FieldNotFound  < Error; end
@@ -104,7 +104,7 @@ module SalesforceAPI
     private
     def login
       generate_soap_classes
-      driver = Soap.new
+      driver = SalesforceAPI::Soap.new
       if @organization_id
         driver.headerhandler << HeaderHandler.new("LoginScopeHeader", :organizationId => @organization_id)
       end

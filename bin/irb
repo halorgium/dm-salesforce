@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+
+require File.dirname(__FILE__) + "/../config/rubundler"
+r = Rubundler.new
+r.setup_env
+
+require "irb"
+require r.root + '/lib/dm-salesforce'
+
+if __FILE__ == $0
+  IRB.start(__FILE__)
+else
+  # check -e option
+  if /^-e$/ =~ $0
+    IRB.start(__FILE__)
+  else
+    IRB.setup(__FILE__)
+  end
+end

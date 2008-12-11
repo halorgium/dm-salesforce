@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+
+if env = ARGV.shift
+  ENV["MERB_ENV"] = env
+end
+
+require File.dirname(__FILE__) + "/../config/rubundler"
+r = Rubundler.new
+r.update
+
+r.check do
+  if system("#{root}/script/check #{ENV['MERB_ENV']} >/dev/null 2>/dev/null")
+    puts "Merb is ready to rumble!"
+  else
+    puts "Merb is not ready!"
+    puts "Check the database.yml"
+    puts "Run script/check for more info"
+    exit 1
+  end
+end

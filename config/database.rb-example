@@ -1,0 +1,5 @@
+DataMapper.setup(:default, {:adapter  => 'salesforce',
+                            :username => 'api-user@example.org',
+                            :password => 'PASSWORD',
+                            :path => "/path/to/the/wsdl/for/salesforce",
+                            :host => ''})

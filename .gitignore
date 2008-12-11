@@ -1,0 +1,5 @@
+config/database.rb
+.gemrc
+gems/
+coverage/
+pkg/
