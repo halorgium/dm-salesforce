@@ -10,10 +10,9 @@ r.update
 
 r.check do
   if system("#{root}/script/check #{ENV['MERB_ENV']} >/dev/null 2>/dev/null")
-    puts "Merb is ready to rumble!"
+    puts "dm-salesforce is ready to rumble!"
   else
-    puts "Merb is not ready!"
-    puts "Check the database.yml"
+    puts "dm-salesforce is not ready!"
     puts "Run script/check for more info"
     exit 1
   end
