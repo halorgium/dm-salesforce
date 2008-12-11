@@ -3,3 +3,7 @@ DataMapper.setup(:default, {:adapter  => 'salesforce',
                             :password => 'PASSWORD',
                             :path => "/path/to/the/wsdl/for/salesforce",
                             :host => ''})
+
+VALID_USER = DataMapperSalesforce::UserDetails.new('the-main-user@example.org'
+                                                   'PASSWORD')
+VALID_SELF_SERVICE_USER = DataMapperSalesforce::UserDetails.new("quentin@example.com", "foo")
