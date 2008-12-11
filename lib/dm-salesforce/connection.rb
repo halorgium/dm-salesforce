@@ -143,11 +143,12 @@ module DataMapperSalesforce
 
     # Generate Ruby files and move them into .salesforce for future use
     def generate_soap_classes
+      unless File.file?(@wsdl_path)
+        raise Errno::ENOENT, "Could not find the Salesforce WSDL at #{@wsdl_path}"
+      end
+
       unless File.directory?(wsdl_api_dir) && Dir["#{wsdl_api_dir}/SalesforceAPI*.rb"].size == 3
         old_args = ARGV.dup
-        unless File.file?(@wsdl_path)
-          raise Errno::ENOENT, "Could not find the Salesforce WSDL at #{@wsdl_path}"
-        end
         ARGV.replace %W(--wsdl #{@wsdl_path} --module_path SalesforceAPI --classdef SalesforceAPI --type client)
         load `which wsdl2ruby.rb`.chomp
         ARGV.replace old_args
