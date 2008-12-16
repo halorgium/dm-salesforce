@@ -93,6 +93,11 @@ module DataMapperSalesforce
       true
     end
 
+    # A dummy method to allow auto_migrate! to run
+    def upgrade_model_storage(*args)
+      true
+    end
+
     # A dummy method to allow migrations without upsetting any data
     def create_model_storage(*args)
       true
