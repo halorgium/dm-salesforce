@@ -5,6 +5,7 @@ r.setup_env
 require 'rake/gempackagetask'
 require 'rubygems/specification'
 require 'date'
+require 'lib/dm-salesforce/version'
 
 GEM = "dm-salesforce"
 GEM_VERSION = "0.9.7.3"
