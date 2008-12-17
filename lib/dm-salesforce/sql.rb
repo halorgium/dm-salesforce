@@ -15,9 +15,9 @@ module DataMapperSalesforce
           else raise "CAN HAS CRASH?"
         end
         case prop
-        when Property
+        when DataMapper::Property
           "#{prop.field} #{operator}"
-        when Query::Path
+        when DataMapper::Query::Path
           rels = prop.relationships
           names = rels.map {|r| storage_name(r, repository) }.join(".")
           "#{names}.#{prop.field} #{operator}"

@@ -40,7 +40,7 @@ module DataMapperSalesforce
     end
 
     def read_many(query)
-      Collection.new(query) do |set|
+      ::DataMapper::Collection.new(query) do |set|
         read(query) do |result|
           set.load(result)
         end
@@ -61,10 +61,13 @@ module DataMapperSalesforce
       result = connection.create(arr)
       result.each_with_index do |record, i|
         resource = resources[i]
-        key = resource.class.key(repository.name).first
-        resource.instance_variable_set(key.instance_variable_name, record.id)
+        id_field = resource.class.key(resource.repository.name).find {|p| p.serial?}
+        id_field.set!(resource, record.id) if id_field
       end
       result.size
+    rescue Connection::CreateError => e
+      populate_errors_for(e.records, resources)
+      e.successful_records.size
     end
 
     def update(attributes, query)
@@ -76,6 +79,9 @@ module DataMapperSalesforce
         end
       end
       connection.update(arr).size
+    rescue Connection::UpdateError => e
+      populate_errors_for(e.records, arr, query)
+      e.successful_records.size
     end
 
     def delete(query)
@@ -86,6 +92,34 @@ module DataMapperSalesforce
       end
 
       connection.delete(keys).size
+    end
+
+    def populate_errors_for(records, resources, query = nil)
+      records.each_with_index do |record,i|
+        next if record.success
+
+        if resources[i].is_a?(DataMapper::Resource)
+          resource = resources[i]
+        elsif resources[i].is_a?(SalesforceAPI::SObject)
+          resource = query.repository.identity_map(query.model)[[resources[i].id]]
+        else
+          resource = query.repository.identity_map(query.model)[[resources[i]]]
+        end
+        
+        resource.class.send(:include, SalesforceExtensions)
+        record.errors.each do |error|
+          case error.statusCode
+          when "DUPLICATE_VALUE"
+            if error.message =~ /duplicate value found: (.*) duplicates/
+              resource.add_salesforce_error_for($1, error.message)
+            end
+          else
+            error.fields.each do |field|
+              resource.add_salesforce_error_for(field, error.message)
+            end
+          end
+        end
+      end
     end
 
     # A dummy method to allow migrations without upsetting any data

@@ -16,8 +16,16 @@ module DataMapperSalesforce
         super("#{message}: #{result_message}")
       end
 
+      def records
+        @result.to_a
+      end
+
       def failed_records
         @result.reject {|r| r.success}
+      end
+
+      def successful_records
+        @result.select {|r| r.success}
       end
 
       def result_message
@@ -61,7 +69,11 @@ module DataMapperSalesforce
       obj = klass.new
       values.each do |property,value|
         field = field_name_for(klass_name, property)
-        obj.send("#{field}=", value)
+        if value.blank?
+          obj.fieldsToNull.push(field)
+        else
+          obj.send("#{field}=", value)
+        end
       end
       obj
     end
