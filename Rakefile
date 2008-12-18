@@ -61,7 +61,7 @@ Spec::Rake::SpecTask.new(:spec) do |t|
 end
 
 desc "Release the version"
-task :release do
+task :release => :repackage do
   version = DataMapperSalesforce::VERSION
   puts "Releasing #{version}"
 
