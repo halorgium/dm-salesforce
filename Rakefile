@@ -8,7 +8,7 @@ require 'date'
 require 'lib/dm-salesforce/version'
 
 GEM = "dm-salesforce"
-GEM_VERSION = "0.9.7.3"
+GEM_VERSION = DataMapperSalesforce::VERSION
 AUTHOR = "Yehuda Katz"
 EMAIL = "wycats@gmail.com"
 HOMEPAGE = "http://www.yehudakatz.com"
@@ -34,7 +34,7 @@ spec = Gem::Specification.new do |s|
   end
   s.require_path = 'lib'
   s.autorequire = GEM
-  s.files = %w(LICENSE README.markdown Rakefile) + Dir.glob("{lib,specs}/**/*")
+  s.files = %w(LICENSE README.markdown Rakefile config/dependencies.rb config/rubundler.rb) + Dir.glob("{lib,specs}/**/*")
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|
