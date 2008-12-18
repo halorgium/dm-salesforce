@@ -69,7 +69,7 @@ module DataMapperSalesforce
       obj = klass.new
       values.each do |property,value|
         field = field_name_for(klass_name, property)
-        if value.blank?
+        if value.nil? or value == ""
           obj.fieldsToNull.push(field)
         else
           obj.send("#{field}=", value)

@@ -9,6 +9,7 @@ class Contact
   property :last_name, String
   property :email, String
   property :irc_nick, String
+  property :has_opted_out_of_email, Boolean
   
   repository(:salesforce) do
     property :id,    String, :serial => true
@@ -91,6 +92,15 @@ describe "Updating a Contact" do
       c.should_not be_valid
       c.errors.size.should == 1
       c.errors.on(:last_name).should == ["Required fields are missing: [LastName]"]
+    end
+  end
+  
+  describe "when updating a field to false" do
+    it "should update" do
+      c = Contact.create(:first_name => 'Per', :last_name => 'Son', :email => "person@company.com", :has_opted_out_of_email => true)
+      c.update_attributes(:has_opted_out_of_email => false)
+      c.should be_valid
+      c.has_opted_out_of_email.should_not be_true
     end
   end
 end
