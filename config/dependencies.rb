@@ -6,6 +6,7 @@ add_gem 'rcov'
 add_gem 'hoe'
 add_gem 'ruby-debug'
 
+add_dependency "httpclient", "=2.1.2"
 add_dependency "extlib", "~> 0.9.9"
 add_dependency "dm-core", "~> 0.9.8", :require => 'dm-core'
 add_dependency "dm-validations", "~> 0.9.8", :require => 'dm-validations'
