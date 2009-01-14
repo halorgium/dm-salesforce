@@ -1,48 +1,10 @@
 require 'soap/wsdlDriver'
 require 'soap/header/simplehandler'
 require "rexml/element"
-require "fileutils"
+require 'dm-salesforce/soap_wrapper'
 
 module DataMapperSalesforce
-  class Connection
-    class Error          < StandardError; end
-    class FieldNotFound  < Error; end
-    class LoginFailed    < Error; end
-    class SessionTimeout < Error; end
-
-    class SOAPError      < Error
-      def initialize(message, result)
-        @result = result
-        super("#{message}: #{result_message}")
-      end
-
-      def records
-        @result.to_a
-      end
-
-      def failed_records
-        @result.reject {|r| r.success}
-      end
-
-      def successful_records
-        @result.select {|r| r.success}
-      end
-
-      def result_message
-        failed_records.map do |r|
-          message_for_record(r)
-        end.join("; ")
-      end
-
-      def message_for_record(record)
-        record.errors.map {|e| "#{e.statusCode}: #{e.message}"}.join(", ")
-      end
-    end
-    class CreateError    < SOAPError; end
-    class QueryError     < SOAPError; end
-    class DeleteError    < SOAPError; end
-    class UpdateError    < SOAPError; end
-
+  class Connection < SoapWrapper
     class HeaderHandler < SOAP::Header::SimpleHandler
       def initialize(tag, value)
         super(XSD::QName.new('urn:enterprise.soap.sforce.com', tag))
@@ -55,10 +17,11 @@ module DataMapperSalesforce
     end
 
     def initialize(username, password, wsdl_path, organization_id = nil)
-      @username, @password, @wsdl_path, @organization_id = URI.unescape(username), password, File.expand_path(wsdl_path), organization_id
-      driver
+      super("SalesforceAPI", "Soap", wsdl_path, "#{ENV["HOME"]}/.salesforce")
+      @username, @password, @organization_id = URI.unescape(username), password, organization_id
+      login
     end
-    attr_reader :wsdl_path, :user_id, :user_details
+    attr_reader :user_id, :user_details
 
     def organization_id
       @user_details && @user_details.organizationId
@@ -115,8 +78,7 @@ module DataMapperSalesforce
 
     private
     def login
-      generate_soap_classes
-      driver = SalesforceAPI::Soap.new
+      driver
       if @organization_id
         driver.headerhandler << HeaderHandler.new("LoginScopeHeader", :organizationId => @organization_id)
       end
@@ -138,10 +100,6 @@ module DataMapperSalesforce
       driver
     end
 
-    def driver
-      @driver ||= login
-    end
-
     def call_api(method, exception_class, message, args)
       with_reconnection do
         result = driver.send(method, args)
@@ -151,34 +109,6 @@ module DataMapperSalesforce
           raise exception_class.new("Got some errors while #{message} Salesforce objects", result)
         end
       end
-    end
-
-    # Generate Ruby files and move them into .salesforce for future use
-    def generate_soap_classes
-      unless File.file?(@wsdl_path)
-        raise Errno::ENOENT, "Could not find the Salesforce WSDL at #{@wsdl_path}"
-      end
-
-      unless File.directory?(wsdl_api_dir) && Dir["#{wsdl_api_dir}/SalesforceAPI*.rb"].size == 3
-        old_args = ARGV.dup
-        ARGV.replace %W(--wsdl #{@wsdl_path} --module_path SalesforceAPI --classdef SalesforceAPI --type client)
-        load `which wsdl2ruby.rb`.chomp
-        ARGV.replace old_args
-        FileUtils.mkdir_p wsdl_api_dir
-        FileUtils.mv Dir["SalesforceAPI*"], wsdl_api_dir
-        FileUtils.rm Dir["SforceServiceClient.rb"]
-      end
-
-      $:.push wsdl_api_dir
-      require "SalesforceAPIDriver"
-    end
-
-    def wsdl_api_dir
-      "#{ENV["HOME"]}/.salesforce/#{wsdl_basename}"
-    end
-
-    def wsdl_basename
-      @wsdl_basename ||= File.basename(@wsdl_path)
     end
 
     def with_reconnection(&block)
@@ -199,3 +129,5 @@ module DataMapperSalesforce
     end
   end
 end
+
+require 'dm-salesforce/connection/errors'
