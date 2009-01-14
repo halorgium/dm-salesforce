@@ -2,6 +2,8 @@ require "fileutils"
 
 module DataMapperSalesforce
   class SoapWrapper
+    class ClassesFailedToGenerate < StandardError; end
+
     def initialize(module_name, driver_name, wsdl_path, api_dir)
       @module_name, @driver_name, @wsdl_path, @api_dir = module_name, driver_name, File.expand_path(wsdl_path), File.expand_path(api_dir)
       generate_soap_classes
@@ -24,7 +26,9 @@ module DataMapperSalesforce
 
       unless Dir["#{wsdl_api_dir}/#{module_name}*.rb"].size == 3
         Dir.chdir(wsdl_api_dir) do
-          puts system(`which wsdl2ruby.rb`.chomp, "--wsdl", wsdl_path, "--module_path", module_name, "--classdef", module_name, "--type", "client")
+          unless system("wsdl2ruby.rb", "--wsdl", wsdl_path, "--module_path", module_name, "--classdef", module_name, "--type", "client")
+            raise ClassesFailedToGenerate, "Could not generate the ruby classes from the WSDL"
+          end
           FileUtils.rm Dir["*Client.rb"]
         end
       end
