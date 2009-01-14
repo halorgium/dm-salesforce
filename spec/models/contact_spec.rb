@@ -5,20 +5,32 @@ class Contact
     :salesforce
   end
 
+  def self.salesforce_id_properties
+    [:id, :account_id]
+  end
+
+  property :id,    String, :serial => true
   property :first_name, String
   property :last_name, String
   property :email, String
   property :irc_nick, String
   property :has_opted_out_of_email, Boolean
-  
-  repository(:salesforce) do
-    property :id,    String, :serial => true
-  end
+  property :account_id, String
+
+  belongs_to :account
 end
 
 describe "Finding a Contact" do
   it "return the first element" do
     Contact.first.should_not be_nil
+  end
+
+  it "has a 15 character long id" do
+    Contact.first.id.size.should == 15
+  end
+
+  it "has a 15 character long account_id" do
+    Contact.first.account_id.size.should == 15
   end
   
   it "should get a list of contacts" do

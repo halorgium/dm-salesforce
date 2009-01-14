@@ -159,7 +159,7 @@ module DataMapperSalesforce
         accum = []
         properties_with_indexes.each do |(property, idx)|
           meth = connection.field_name_for(property.model.storage_name(repository.name), property.field(repository.name))
-          accum[idx] = record.send(meth)
+          accum[idx] = normalize_id_value(query.model, property, record.send(meth))
         end
         yield accum
       end
@@ -169,10 +169,19 @@ module DataMapperSalesforce
       klass_name = query.model.storage_name(query.repository.name)
       values = {}
       values["id"] = query.conditions.find {|op,prop,val| prop.key?}.last if key
+
       attrs.each do |property,value|
         values[property.field(query.repository.name)] = value
       end
       connection.make_object(klass_name, values)
+    end
+
+    def normalize_id_value(klass, property, value)
+      if klass.respond_to?(:salesforce_id_properties)
+        properties = Array(klass.salesforce_id_properties).map {|p| p.to_sym}
+        return value[0..14] if properties.include?(property.name)
+      end
+      value
     end
   end
 end
