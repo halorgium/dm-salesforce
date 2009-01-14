@@ -55,7 +55,7 @@ Spec::Rake::SpecTask.new(:spec) do |t|
   t.spec_opts << '--loadby' << 'random'
   t.spec_files = %w(adapter connection models).collect { |dir| Dir["spec/#{dir}/**/*_spec.rb"] }.flatten
   t.rcov = ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true
-  t.rcov_opts << '--exclude' << '~/.salesforce,gems,spec,config'
+  t.rcov_opts << '--exclude' << '~/.salesforce,gems,spec,config,tmp'
   t.rcov_opts << '--text-summary'
   t.rcov_opts << '--sort' << 'coverage' << '--sort-reverse'
 end

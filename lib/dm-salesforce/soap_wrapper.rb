@@ -24,7 +24,7 @@ module DataMapperSalesforce
         FileUtils.mkdir_p wsdl_api_dir
       end
 
-      unless Dir["#{wsdl_api_dir}/#{module_name}*.rb"].size == 3
+      unless files_exist?
         Dir.chdir(wsdl_api_dir) do
           unless system("wsdl2ruby.rb", "--wsdl", wsdl_path, "--module_path", module_name, "--classdef", module_name, "--type", "client")
             raise ClassesFailedToGenerate, "Could not generate the ruby classes from the WSDL"
@@ -35,6 +35,12 @@ module DataMapperSalesforce
 
       $:.push wsdl_api_dir
       require "#{module_name}Driver"
+    end
+
+    def files_exist?
+      %w( .rb Driver.rb MappingRegistry.rb ).all? do |suffix|
+        File.exist?("#{wsdl_api_dir}/#{module_name}#{suffix}")
+      end
     end
 
     def wsdl_api_dir

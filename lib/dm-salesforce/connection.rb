@@ -4,7 +4,7 @@ require "rexml/element"
 require 'dm-salesforce/soap_wrapper'
 
 module DataMapperSalesforce
-  class Connection < SoapWrapper
+  class Connection
     class HeaderHandler < SOAP::Header::SimpleHandler
       def initialize(tag, value)
         super(XSD::QName.new('urn:enterprise.soap.sforce.com', tag))
@@ -17,11 +17,15 @@ module DataMapperSalesforce
     end
 
     def initialize(username, password, wsdl_path, organization_id = nil)
-      super("SalesforceAPI", "Soap", wsdl_path, "#{ENV["HOME"]}/.salesforce")
+      @wrapper = SoapWrapper.new("SalesforceAPI", "Soap", wsdl_path, api_dir)
       @username, @password, @organization_id = URI.unescape(username), password, organization_id
       login
     end
     attr_reader :user_id, :user_details
+
+    def wsdl_path
+      @wrapper.wsdl_path
+    end
 
     def organization_id
       @user_details && @user_details.organizationId
@@ -77,6 +81,14 @@ module DataMapperSalesforce
     end
 
     private
+    def api_dir
+      ENV["SALESFORCE_DIR"] || "#{ENV["HOME"]}/.salesforce"
+    end
+
+    def driver
+      @wrapper.driver
+    end
+
     def login
       driver
       if @organization_id
