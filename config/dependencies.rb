@@ -1,15 +1,12 @@
-add_source "http://gems.rubyforge.org/"
+dependency 'rspec', :require_as => nil
+dependency 'rake', :require_as => nil
+dependency 'rcov', :require_as => nil
+dependency 'ruby-debug', :require_as => nil
 
-add_gem 'rspec'
-add_gem 'rake'
-add_gem 'rcov'
-add_gem 'hoe'
-add_gem 'ruby-debug'
-
-add_dependency "httpclient", "=2.1.2"
-add_dependency "extlib", "~> 0.9.9"
-add_dependency "dm-core", "~> 0.9.8", :require => 'dm-core'
-add_dependency "dm-validations", "~> 0.9.8", :require => 'dm-validations'
-add_dependency "soap4r", "~> 1.5.8"
-add_dependency "data_objects", "~> 0.9.9"
-add_dependency "do_sqlite3", "~> 0.9.9"
+dependency "httpclient", "=2.1.2"
+dependency "extlib", "~> 0.9.9"
+dependency "dm-core", "~> 0.9.8", :require_as => 'dm-core'
+dependency "dm-validations", "~> 0.9.8", :require_as => 'dm-validations'
+dependency "soap4r", "~> 1.5.8"
+dependency "data_objects", "~> 0.9.9"
+dependency "do_sqlite3", "~> 0.9.9"

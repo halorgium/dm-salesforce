@@ -1,7 +1,0 @@
-#!/usr/bin/env ruby
-
-require File.dirname(__FILE__) + "/../config/rubundler"
-r = Rubundler.new
-r.setup_env
-
-load "spec"

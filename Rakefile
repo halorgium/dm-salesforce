@@ -1,11 +1,14 @@
-require File.dirname(__FILE__) + "/config/rubundler"
-r = Rubundler.new
-r.setup_env
+ENV['GEM_HOME'] = 'gems'
+ENV['GEM_PATH'] = 'gems'
+require 'rubygems'
 
 require 'rake/gempackagetask'
 require 'rubygems/specification'
 require 'date'
-require 'lib/dm-salesforce/version'
+require 'thor'
+
+require File.dirname(__FILE__) + '/lib/dm-salesforce/version'
+require File.dirname(__FILE__) + '/tasks/merb.thor/ops'
 
 GEM = "dm-salesforce"
 GEM_VERSION = DataMapperSalesforce::VERSION
@@ -25,13 +28,17 @@ spec = Gem::Specification.new do |s|
   s.author = AUTHOR
   s.email = EMAIL
   s.homepage = HOMEPAGE
-  r.gem_config.gems.each do |name,version|
+
+  deps = Thor::Tasks::Merb::Collector.collect(File.read('config/dependencies.rb'))
+  deps.each do |dep|
+    name, version = dep.first, dep.last
     if version
       s.add_dependency(name, version)
     else
       s.add_dependency(name)
     end
   end
+
   s.require_path = 'lib'
   s.autorequire = GEM
   s.files = %w(LICENSE README.markdown Rakefile config/dependencies.rb config/rubundler.rb) + Dir.glob("{lib,specs}/**/*")

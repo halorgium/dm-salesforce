@@ -1,10 +1,8 @@
-require File.dirname(__FILE__) + "/../config/rubundler"
-r = Rubundler.new
-r.setup_env
-r.setup_requirements
-
 $:.push File.expand_path(File.dirname(__FILE__))
 
+gem 'soap4r'
+require 'dm-core'
+require 'dm-validations'
 require 'dm-salesforce/sql'
 require 'dm-salesforce/extensions'
 require 'dm-salesforce/adapter'

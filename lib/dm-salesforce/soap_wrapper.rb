@@ -26,9 +26,12 @@ module DataMapperSalesforce
 
       unless files_exist?
         Dir.chdir(wsdl_api_dir) do
-          unless system("wsdl2ruby.rb", "--wsdl", wsdl_path, "--module_path", module_name, "--classdef", module_name, "--type", "client")
-            raise ClassesFailedToGenerate, "Could not generate the ruby classes from the WSDL"
-          end
+          soap4r = Gem.loaded_specs['soap4r']
+          wsdl2ruby = File.join(soap4r.full_gem_path, soap4r.bindir, "wsdl2ruby.rb")
+          old_args = ARGV.dup
+          ARGV.replace %W(--wsdl #{wsdl_path} --module_path #{module_name} --classdef #{module_name} --type client)
+          load `which #{wsdl2ruby}`.chomp
+          ARGV.replace old_args
           FileUtils.rm Dir["*Client.rb"]
         end
       end
