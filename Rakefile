@@ -41,7 +41,7 @@ spec = Gem::Specification.new do |s|
 
   s.require_path = 'lib'
   s.autorequire = GEM
-  s.files = %w(LICENSE README.markdown Rakefile config/dependencies.rb config/rubundler.rb) + Dir.glob("{lib,specs}/**/*")
+  s.files = %w(LICENSE README.markdown Rakefile config/dependencies.rb) + Dir.glob("{lib,specs}/**/*")
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|
@@ -94,7 +94,7 @@ task :release => :repackage do
 
   puts "Changing the version to #{next_version}."
 
-  version_file = "#{r.root}/lib/#{GEM}/version.rb"
+  version_file = File.dirname(__FILE__)+"/lib/#{GEM}/version.rb"
   File.open(version_file, "w") do |f|
     f.puts <<-EOT
 module DataMapperSalesforce
