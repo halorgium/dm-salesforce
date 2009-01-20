@@ -25,12 +25,12 @@ module DataMapperSalesforce
       end
 
       unless files_exist?
+        soap4r = Gem.loaded_specs['soap4r']
+        wsdl2ruby = File.expand_path(File.join(soap4r.full_gem_path, soap4r.bindir, "wsdl2ruby.rb"))
         Dir.chdir(wsdl_api_dir) do
-          soap4r = Gem.loaded_specs['soap4r']
-          wsdl2ruby = File.join(soap4r.full_gem_path, soap4r.bindir, "wsdl2ruby.rb")
           old_args = ARGV.dup
           ARGV.replace %W(--wsdl #{wsdl_path} --module_path #{module_name} --classdef #{module_name} --type client)
-          load `which #{wsdl2ruby}`.chomp
+          load wsdl2ruby
           ARGV.replace old_args
           FileUtils.rm Dir["*Client.rb"]
         end
