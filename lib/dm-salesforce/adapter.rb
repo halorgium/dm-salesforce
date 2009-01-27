@@ -62,7 +62,10 @@ module DataMapperSalesforce
       result.each_with_index do |record, i|
         resource = resources[i]
         id_field = resource.class.key(resource.repository.name).find {|p| p.serial?}
-        id_field.set!(resource, record.id) if id_field
+        if id_field
+          normalized_value = normalize_id_value(resource.class, id_field, record.id)
+          id_field.set!(resource, normalized_value)
+        end
       end
       result.size
     rescue Connection::CreateError => e
@@ -168,10 +171,14 @@ module DataMapperSalesforce
     def make_salesforce_obj(query, attrs, key)
       klass_name = query.model.storage_name(query.repository.name)
       values = {}
-      values["id"] = query.conditions.find {|op,prop,val| prop.key?}.last if key
+      if key
+        key_value = query.conditions.find {|op,prop,val| prop.key?}.last
+        values["id"] = normalize_id_value(query.model, query.model.properties[:id], key_value)
+      end
 
       attrs.each do |property,value|
-        values[property.field(query.repository.name)] = value
+        normalized_value = normalize_id_value(query.model, property, value)
+        values[property.field(query.repository.name)] = normalized_value
       end
       connection.make_object(klass_name, values)
     end
