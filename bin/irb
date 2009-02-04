@@ -28,6 +28,7 @@ module DataMapperSalesforce
   UserDetails = Struct.new(:username, :password)
 end
 
+require 'pp'
 require 'irb'
 require 'dm-core'
 require File.dirname(__FILE__)+'/../lib/dm-salesforce'
