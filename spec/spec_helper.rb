@@ -1,5 +1,7 @@
 require 'rubygems'
 require File.dirname(__FILE__)+'/../lib/dm-salesforce'
+require File.dirname(__FILE__)+'/fixtures/account'
+require File.dirname(__FILE__)+'/fixtures/contact'
 
 root = File.expand_path(File.dirname(__FILE__) + '/../') 
 require 'fileutils'

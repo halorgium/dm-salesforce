@@ -1,25 +1,3 @@
-class Contact
-  include DataMapper::Resource
-  
-  def self.default_repository_name
-    :salesforce
-  end
-
-  def self.salesforce_id_properties
-    [:id, :account_id]
-  end
-
-  property :id,    String, :serial => true
-  property :first_name, String
-  property :last_name, String
-  property :email, String
-  property :irc_nick, String
-  property :has_opted_out_of_email, Boolean
-  property :account_id, String
-
-  belongs_to :account
-end
-
 describe "Finding a Contact" do
   it "return the first element" do
     Contact.first.should_not be_nil
@@ -53,8 +31,9 @@ describe "Creating a Contact" do
     end
   end
 
-  describe "when the irc_nick is invalid" do
+  describe "when a unique property" do
     it "is invalid" do
+      pending
       c = Contact.create(:first_name => 'Per', :last_name => 'Son', :email => "person@company.com", :irc_nick => 'qblake_')
       c.should_not be_valid
       c.errors.size.should == 1
@@ -85,8 +64,9 @@ describe "Updating a Contact" do
     end
   end
 
-  describe "when the irc_nick is invalid" do
+  describe "when a unique property" do
     it "is invalid" do
+      pending
       c = Contact.create(:first_name => 'Per', :last_name => 'Son', :email => "person@company.com")
       c.update_attributes(:irc_nick => 'qblake_')
       c.should_not be_valid
@@ -106,13 +86,10 @@ describe "Updating a Contact" do
       c.errors.on(:last_name).should == ["Required fields are missing: [LastName]"]
     end
   end
-  
-  describe "when updating a field to false" do
+
+  describe "when updating a boolean field to false" do
     it "should update" do
-      c = Contact.create(:first_name => 'Per', :last_name => 'Son', :email => "person@company.com", :has_opted_out_of_email => true)
-      c.update_attributes(:has_opted_out_of_email => false)
-      c.should be_valid
-      c.has_opted_out_of_email.should_not be_true
+      pending
     end
   end
 end

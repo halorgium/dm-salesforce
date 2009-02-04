@@ -18,8 +18,9 @@ module DataMapperSalesforce
     end
 
     describe "when authenticating with an organization id" do
-      describe "with the correct credentials" do
+      describe "with the correct self service credentials" do
         it "succeeds" do
+          pending
           db = DataMapper.repository(:salesforce).adapter.connection
           Connection.new(VALID_SELF_SERVICE_USER.username, VALID_SELF_SERVICE_USER.password, db.wsdl_path, db.organization_id)
         end
