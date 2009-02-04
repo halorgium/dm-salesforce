@@ -45,7 +45,10 @@ An example of using the adapter:
       belongs_to :account
     end
 
+
 To get a test environment going with the free development tools you'll need to follow these steps.
+
+
 * Get a developer account from http://force.salesforce.com
 * Hit up https://login.salesforce.com, and login with the password they provided in your signup email
 * Remember the password they force you to reset
