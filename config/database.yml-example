@@ -1,0 +1,13 @@
+---
+development:
+  repositories:
+    default:
+      adapter:  sqlite3
+      database: db/development.db
+
+    salesforce:
+      adapter: salesforce
+      username: api-user@example.org
+      password: passwordAPIKEY
+      path: /path/to/your/salesforce.wsdl
+      apidir: /path/to/cache/classfiles/
