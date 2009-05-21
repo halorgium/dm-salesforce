@@ -98,7 +98,7 @@ module DataMapperSalesforce
       keys = if key_condition = query.conditions.find {|op,prop,val| prop.key?}
         [key_condition.last]
       else
-        query.read_many.map {|r| r.key}
+        query.repository.read_many(query).map {|r| r.key}
       end
 
       connection.delete(keys).size
