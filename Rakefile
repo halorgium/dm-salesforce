@@ -1,5 +1,3 @@
-ENV['GEM_HOME'] = 'gems'
-ENV['GEM_PATH'] = 'gems'
 require 'rubygems'
 
 require 'rake/gempackagetask'
@@ -50,7 +48,7 @@ end
 
 desc "install the gem locally"
 task :install => [:package] do
-  sh %{sudo gem install pkg/#{GEM}-#{GEM_VERSION} --no-ri --no-rdoc}
+  sh %{gem install pkg/#{GEM}-#{GEM_VERSION} --no-ri --no-rdoc}
 end
 
 task :default => 'spec'
