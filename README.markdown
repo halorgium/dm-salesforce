@@ -3,10 +3,17 @@ dm-salesforce
 
 A gem that provides a Salesforce Adapter for DataMapper.
 
-The wsdl is converted into Ruby classes and stored in ~/.salesforce. This automatically
-happens the first time you use the salesforce adapter, so you don't need to worry about
-generating Ruby code. It just works if you have the wsdl, directions for getting going 
-are outlined below.
+The wsdl is automatically converted into Ruby classes upon the first
+invocation of the dm-salesforce adapter.  The classes in turn get
+cached locally in one of the following locations, in order of
+precedence:
+
+    :repositories:salesforce:apidir (see included database.yml-example)
+    ENV["SALESFORCE_DIR"]
+    ~/.salesforce/
+
+It just works if you have the wsdl, directions for getting going are
+outlined below.
 
 An example of using the adapter:
 
