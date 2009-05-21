@@ -24,12 +24,20 @@ An example of using the adapter:
         :salesforce
       end
 
+      # One way to define which properties are SalesForce-style.
       def self.salesforce_id_properties
         :id
       end
 
-      property :id, String, :serial => true
-      property :name, String
+      property :id,          String, :key => true
+      property :name,        String
+      property :description, String
+      property :fax,         String
+      property :phone,       String
+      property :type,        String
+      property :website,     String
+
+      has 0..n, :contacts
     end
 
     class Contact
@@ -39,22 +47,18 @@ An example of using the adapter:
         :salesforce
       end
 
-      def self.salesforce_id_properties
-        [:id, :account_id]
-      end
-
-      property :id,    String, :serial => true
+      # Alternatively, specify the :salesforce_id option.
+      property :id,         String, :serial => true, :salesforce_id => true
       property :first_name, String
-      property :last_name, String
-      property :email, String
-      property :account_id, String
+      property :last_name,  String
+      property :email,      String
+      property :account_id, String, :salesforce_id => true
 
       belongs_to :account
     end
 
 
 To get a test environment going with the free development tools you'll need to follow these steps.
-
 
 * Get a developer account from http://force.salesforce.com
 * Hit up https://login.salesforce.com, and login with the password they provided in your signup email

@@ -192,6 +192,7 @@ module DataMapperSalesforce
 
     def normalize_id_value(klass, property, value)
       return value unless value
+      return value[0..14] if property.extra_options[:salesforce_id] == true
       if klass.respond_to?(:salesforce_id_properties)
         properties = Array(klass.salesforce_id_properties).map {|p| p.to_sym}
         return value[0..14] if properties.include?(property.name)
