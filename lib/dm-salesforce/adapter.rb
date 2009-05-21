@@ -27,7 +27,7 @@ module DataMapperSalesforce
       end
 
       if @api_dir = uri_or_options.delete(:apidir)
-          @api_dir.insert(0, Merb.root) unless @api_dir[0] == File::SEPARATOR[0]
+          @api_dir.insert(0, Merb.root + File::SEPARATOR) unless @api_dir[0] == File::SEPARATOR[0]
       end
       @api_dir ||= ENV["SALESFORCE_DIR"] || "#{ENV["HOME"]}/.salesforce"
 
