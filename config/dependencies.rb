@@ -3,7 +3,7 @@ dependency 'rake', :require_as => nil
 dependency 'rcov', :require_as => nil
 dependency 'ruby-debug', :require_as => nil
 
-dependency "httpclient", "=2.1.2"
+dependency "httpclient", "=2.1.4"
 dependency "extlib", "~> 0.9.9"
 dependency "dm-core", "~> 0.9.8", :require_as => 'dm-core'
 dependency "dm-validations", "~> 0.9.8", :require_as => 'dm-validations'
