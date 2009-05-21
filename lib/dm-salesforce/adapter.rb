@@ -98,7 +98,7 @@ module DataMapperSalesforce
       keys = if key_condition = query.conditions.find {|op,prop,val| prop.key?}
         [key_condition.last]
       else
-        query.repository.read_many(query).map {|r| r.key}
+        read_many(query).map {|r| r.key}
       end
 
       connection.delete(keys).size
@@ -147,6 +147,16 @@ module DataMapperSalesforce
       true
     end
 
+    # SOQL doesn't support anything but count(), so we catch it here.
+    def aggregate(query)
+        query.fields.map do |f|
+            unless f.target == :all && f.operator == :count
+                raise ArgumentError, %{Aggregate function #{f.operator} not supported in SOQL}
+            end
+        end
+        read(query)
+    end
+
     private
     def read(query, &block)
       repository = query.repository
@@ -154,7 +164,18 @@ module DataMapperSalesforce
       properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
       conditions = query.conditions.map {|c| SQL.from_condition(c, repository)}.compact.join(") AND (")
 
-      sql = "SELECT #{query.fields.map {|f| f.field(repository.name)}.join(", ")} from #{query.model.storage_name(repository.name)}"
+      fields = query.fields.map do |f|
+        case f
+          when DataMapper::Property
+            f.field(repository.name)
+          when DataMapper::Query::Operator
+            %{#{f.operator}()}
+          else
+            raise ArgumentError, "Unknown query field #{f.class}: #{f.inspect}"
+        end
+      end.join(", ")
+
+      sql = "SELECT #{fields} from #{query.model.storage_name(repository.name)}"
       sql << " WHERE (#{conditions})" unless conditions.empty?
       sql << " ORDER BY #{SQL.order(query.order[0])}" unless query.order.empty?
       sql << " LIMIT #{query.limit}" if query.limit
@@ -163,7 +184,10 @@ module DataMapperSalesforce
 
       result = connection.query(sql)
 
+      # This catches aggregate cases, where the size field holds our
+      # non-model result.
       return unless result.records
+      return [result.size] if result.records.reject(&:nil?).empty?
 
       result.records.each do |record|
         accum = []
