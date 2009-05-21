@@ -16,7 +16,7 @@ module DataMapperSalesforce
       end
     end
 
-    def initialize(username, password, wsdl_path, organization_id = nil)
+    def initialize(username, password, wsdl_path, api_dir, organization_id = nil)
       @wrapper = SoapWrapper.new("SalesforceAPI", "Soap", wsdl_path, api_dir)
       @username, @password, @organization_id = URI.unescape(username), password, organization_id
       login
@@ -81,9 +81,6 @@ module DataMapperSalesforce
     end
 
     private
-    def api_dir
-      ENV["SALESFORCE_DIR"] || "#{ENV["HOME"]}/.salesforce"
-    end
 
     def driver
       @wrapper.driver

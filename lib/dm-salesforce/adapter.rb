@@ -15,6 +15,8 @@ module DataMapperSalesforce
       end
     end
 
+    attr_reader :api_dir
+
     def normalize_uri(uri_or_options)
       if uri_or_options.kind_of?(Addressable::URI)
         return uri_or_options
@@ -23,6 +25,11 @@ module DataMapperSalesforce
       if uri_or_options.kind_of?(String)
         uri_or_options = Addressable::URI.parse(uri_or_options)
       end
+
+      if @api_dir = uri_or_options.delete(:apidir)
+          @api_dir.insert(0, Merb.root) unless @api_dir[0] == File::SEPARATOR[0]
+      end
+      @api_dir ||= ENV["SALESFORCE_DIR"] || "#{ENV["HOME"]}/.salesforce"
 
       adapter  = uri_or_options.delete(:adapter).to_s
       user     = uri_or_options.delete(:username)
@@ -36,7 +43,7 @@ module DataMapperSalesforce
     end
 
     def connection
-      @connection ||= Connection.new(@uri.user, @uri.password, @uri.host + @uri.path)
+      @connection ||= Connection.new(@uri.user, @uri.password, @uri.host + @uri.path, api_dir)
     end
 
     def read_many(query)
@@ -108,7 +115,7 @@ module DataMapperSalesforce
         else
           resource = query.repository.identity_map(query.model)[[resources[i]]]
         end
-        
+
         resource.class.send(:include, SalesforceExtensions)
         record.errors.each do |error|
           case error.statusCode
