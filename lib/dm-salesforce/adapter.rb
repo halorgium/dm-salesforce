@@ -59,10 +59,10 @@ module DataMapperSalesforce
       e.successful_records.size
     end
 
-    # TODO: change query param to collection
-    def update(attributes, query)
-      arr = if key_condition = query.conditions.find {|op,prop,val| prop.key?}
-        [ make_salesforce_obj(query, attributes, key_condition.last) ]
+    def update(attributes, collection)
+      query = collection.query
+      arr = if key_condition = query.conditions.find {|op| op.subject.key? }
+        [ make_salesforce_obj(query, attributes, key_condition) ]
       else
         read_many(query).map do |obj|
           obj = make_salesforce_obj(query, attributes, x.key)
@@ -70,7 +70,7 @@ module DataMapperSalesforce
       end
       connection.update(arr).size
     rescue Connection::UpdateError => e
-      populate_errors_for(e.records, arr, query)
+      populate_errors_for(e.records, arr, collection)
       e.successful_records.size
     end
 
@@ -84,16 +84,16 @@ module DataMapperSalesforce
       connection.delete(keys).size
     end
 
-    def populate_errors_for(records, resources, query = nil)
+    def populate_errors_for(records, resources, collection = nil)
       records.each_with_index do |record,i|
         next if record.success
 
         if resources[i].is_a?(DataMapper::Resource)
           resource = resources[i]
         elsif resources[i].is_a?(SalesforceAPI::SObject)
-          resource = query.repository.identity_map(query.model)[[resources[i].id]]
+          resource = collection.detect {|o| o.id == resources[i].id}
         else
-          resource = query.repository.identity_map(query.model)[[resources[i]]]
+          resource = collection.detect {|o| o.id == resources[i]}
         end
         
         resource.class.send(:include, SalesforceExtensions)
@@ -165,8 +165,8 @@ module DataMapperSalesforce
       klass_name = query.model.storage_name(query.repository.name)
       values = {}
       if key
-        key_value = query.conditions.find {|op,prop,val| prop.key?}.last
-        values["id"] = normalize_id_value(query.model, query.model.properties[:id], key_value)
+        key_condition = query.conditions.find {|op| op.subject.key?}
+        values["id"] = normalize_id_value(query.model, query.model.properties[:id], key_condition.value)
       end
 
       attrs.each do |property,value|
