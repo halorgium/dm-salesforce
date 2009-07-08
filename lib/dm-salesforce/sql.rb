@@ -2,8 +2,9 @@ module DataMapperSalesforce
   module SQL
     class << self
       def from_condition(condition, repository)
-        op, prop, value = condition
-        operator = case op
+        value = condition.value
+        prop = condition.subject
+        operator = case condition.class.slug
           when String then operator
           when :eql, :in then equality_operator(value)
           when :not      then inequality_operator(value)
