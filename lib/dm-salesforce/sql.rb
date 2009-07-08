@@ -29,7 +29,7 @@ module DataMapperSalesforce
       end
 
       def order(direction)
-        "#{direction.property.field} #{direction.direction.to_s.upcase}"
+        "#{direction.target.field} #{direction.operator.to_s.upcase}"
       end
 
       private

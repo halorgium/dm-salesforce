@@ -59,6 +59,7 @@ module DataMapperSalesforce
       e.successful_records.size
     end
 
+    # TODO: change query param to collection
     def update(attributes, query)
       arr = if key_condition = query.conditions.find {|op,prop,val| prop.key?}
         [ make_salesforce_obj(query, attributes, key_condition.last) ]
@@ -132,7 +133,7 @@ module DataMapperSalesforce
       properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
       conditions = query.conditions.map {|c| SQL.from_condition(c, repository)}.compact.join(") AND (")
 
-      sql = "SELECT #{query.fields.map {|f| f.field(repository.name)}.join(", ")} from #{query.model.storage_name(repository.name)}"
+      sql = "SELECT #{query.fields.map {|f| f.field}.join(", ")} from #{query.model.storage_name(repository.name)}"
       sql << " WHERE (#{conditions})" unless conditions.empty?
       sql << " ORDER BY #{SQL.order(query.order[0])}" unless query.order.empty?
       sql << " LIMIT #{query.limit}" if query.limit
@@ -143,12 +144,17 @@ module DataMapperSalesforce
 
       return unless result.records
 
+
+      accum = []
       result.records.each do |record|
-        accum = []
+        hash = {}
+
         properties_with_indexes.each do |(property, idx)|
-          meth = connection.field_name_for(property.model.storage_name(repository.name), property.field(repository.name))
-          accum[idx] = normalize_id_value(query.model, property, record.send(meth))
+          meth = connection.field_name_for(property.model.storage_name(repository.name), property.field)
+          hash[meth] = normalize_id_value(query.model, property, record.send(meth))
         end
+
+        accum << hash
       end
       accum
     end
@@ -164,8 +170,10 @@ module DataMapperSalesforce
       end
 
       attrs.each do |property,value|
-        normalized_value = normalize_id_value(query.model, property, value)
-        values[property.field(query.repository.name)] = normalized_value
+        unless value.nil?
+          normalized_value = normalize_id_value(query.model, property, value)
+          values[property.field] = normalized_value
+        end
       end
       connection.make_object(klass_name, values)
     end
