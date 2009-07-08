@@ -36,21 +36,7 @@ module DataMapperSalesforce
     end
 
     def connection
-      @connection ||= Connection.new(@uri.user, @uri.password, @uri.host + @uri.path)
-    end
-
-    def read_many(query)
-      ::DataMapper::Collection.new(query) do |set|
-        read(query) do |result|
-          set.load(result)
-        end
-      end
-    end
-
-    def read_one(query)
-      read(query) do |result|
-        return query.model.load(result, query)
-      end
+      @connection ||= Connection.new(@options[:username], @options[:password], @options[:host] + @options[:path])
     end
 
     def create(resources)
@@ -140,8 +126,7 @@ module DataMapperSalesforce
       true
     end
 
-    private
-    def read(query, &block)
+    def read(query)
       repository = query.repository
       properties = query.fields
       properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
@@ -164,10 +149,12 @@ module DataMapperSalesforce
           meth = connection.field_name_for(property.model.storage_name(repository.name), property.field(repository.name))
           accum[idx] = normalize_id_value(query.model, property, record.send(meth))
         end
-        yield accum
       end
+      accum
     end
 
+    private
+    
     def make_salesforce_obj(query, attrs, key)
       klass_name = query.model.storage_name(query.repository.name)
       values = {}
