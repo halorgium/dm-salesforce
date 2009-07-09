@@ -74,9 +74,10 @@ module DataMapperSalesforce
       e.successful_records.size
     end
 
-    def delete(query)
-      keys = if key_condition = query.conditions.find {|op,prop,val| prop.key?}
-        [key_condition.last]
+    def delete(collection)
+      query = collection.query
+      keys = if key_condition = query.conditions.find {|op| op.subject.key?}
+        [key_condition.value]
       else
         query.read_many.map {|r| r.key}
       end
@@ -142,7 +143,7 @@ module DataMapperSalesforce
 
       result = connection.query(sql)
 
-      return unless result.records
+      return [] unless result.records
 
 
       accum = []
