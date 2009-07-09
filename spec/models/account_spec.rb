@@ -8,7 +8,9 @@ describe "Account" do
   end
 
   it "has a 15 character long id" do
-    Account.create(:name => "Adidas Corporation").id.size.should == 15
+    Account.all(:name => "Adidas Corporation").each {|a| a.destroy }
+    a = Account.create(:name => "Adidas Corporation")
+    a.id.size.should == 15
   end
 
   it "should find a single account" do
@@ -27,5 +29,10 @@ describe "Account" do
     Account.all(:name => "Topfunky Corporation").each {|a| a.destroy }
     Account.create(:name => "Topfunky Corporation").destroy
     Account.first(:name => "Topfunky Corporation").should be_nil
+  end
+
+  it "should not find an account" do
+    tf = Account.create(:name => "Topfunky Corporation")
+    Account.all(:name.not => "Topfunky Corporation").entries.should_not include(tf)
   end
 end

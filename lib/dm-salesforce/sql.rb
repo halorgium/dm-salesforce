@@ -2,9 +2,16 @@ module DataMapperSalesforce
   module SQL
     class << self
       def from_condition(condition, repository)
+        slug = condition.class.slug
+        condition = case condition
+          when DataMapper::Query::Conditions::AbstractOperation then condition.operands.first
+          when DataMapper::Query::Conditions::AbstractComparison then condition
+          else raise("Unkown condition type #{condition.class}: #{condition.inspect}")
+          end
+
         value = condition.value
         prop = condition.subject
-        operator = case condition.class.slug
+        operator = case slug
           when String then operator
           when :eql, :in then equality_operator(value)
           when :not      then inequality_operator(value)

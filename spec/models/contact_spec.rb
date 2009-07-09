@@ -8,7 +8,13 @@ describe "Finding a Contact" do
   end
 
   it "has a 15 character long account_id" do
-    Contact.first.account_id.size.should == 15
+    contact = Contact.create(
+      :first_name => 'Per',
+      :last_name => 'Son',
+      :email => "person@example.com",
+      :account => Account.create(:name => "Puma Shoes Unlimited")
+    )
+    contact.account_id.size.should == 15
   end
   
   it "should get a list of contacts" do
