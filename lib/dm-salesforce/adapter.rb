@@ -116,10 +116,12 @@ module DataMapperSalesforce
             if error.message =~ /duplicate value found: (.*) duplicates/
               resource.add_salesforce_error_for($1, error.message)
             end
-          else
+          when "REQUIRED_FIELD_MISSING", "INVALID_EMAIL_ADDRESS"
             error.fields.each do |field|
               resource.add_salesforce_error_for(field, error.message)
             end
+          else
+            raise "Got an unknown error statusCode: #{error.statusCode.inspect}"
           end
         end
       end
