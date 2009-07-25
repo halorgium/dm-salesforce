@@ -17,7 +17,7 @@ EMAIL = "wycats@gmail.com"
 HOMEPAGE = "http://www.yehudakatz.com"
 SUMMARY = "A DataMapper adapter to the Salesforce API"
 
-spec = Gem::Specification.new do |s|
+@spec = Gem::Specification.new do |s|
   s.name = GEM
   s.version = GEM_VERSION
   s.platform = Gem::Platform::RUBY
@@ -44,8 +44,8 @@ spec = Gem::Specification.new do |s|
   s.files = %w(LICENSE README.markdown Rakefile config/dependencies.rb) + Dir.glob("{lib,specs}/**/*")
 end
 
-Rake::GemPackageTask.new(spec) do |pkg|
-  pkg.gem_spec = spec
+Rake::GemPackageTask.new(@spec) do |pkg|
+  pkg.gem_spec = @spec
 end
 
 desc "install the gem locally"
@@ -89,8 +89,8 @@ task :release => :repackage do
   system("git", "checkout", "master")
   system("git", "branch", "-d", "releasing")
 
-  ints = Gem::Version.new(version).ints << 0
-  next_version = Gem::Version.new(ints.join(".")).bump
+  current = @spec.version.to_s + ".0"
+  next_version = Gem::Version.new(current).bump
 
   puts "Changing the version to #{next_version}."
 
