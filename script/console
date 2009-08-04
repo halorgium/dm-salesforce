@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+
+require File.dirname(__FILE__) + '/../vendor/gems/environments/default'
+require File.dirname(__FILE__)+'/../lib/dm-salesforce'
+require File.dirname(__FILE__)+'/../spec/fixtures/account'
+require File.dirname(__FILE__)+'/../spec/fixtures/contact'
+require File.dirname(__FILE__)+'/../config/database'
+
+require 'pp'
+require 'irb'
+
+if __FILE__ == $0
+  IRB.start(__FILE__)
+else
+  # check -e option
+  if /^-e$/ =~ $0
+    IRB.start(__FILE__)
+  else
+    IRB.setup(__FILE__)
+  end
+end
+

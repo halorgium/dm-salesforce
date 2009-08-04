@@ -1,14 +1,10 @@
-ENV['GEM_HOME'] = 'gems'
-ENV['GEM_PATH'] = 'gems'
-require 'rubygems'
-
+require File.dirname(__FILE__) + '/vendor/gems/environments/default'
 require 'rake/gempackagetask'
 require 'rubygems/specification'
 require 'date'
-require 'thor'
 
-require File.dirname(__FILE__) + '/lib/dm-salesforce/version'
-require File.dirname(__FILE__) + '/tasks/merb.thor/ops'
+require File.dirname(__FILE__) + '/lib/dm-salesforce'
+require 'bundler'
 
 GEM = "dm-salesforce"
 GEM_VERSION = DataMapperSalesforce::VERSION
@@ -29,19 +25,14 @@ SUMMARY = "A DataMapper adapter to the Salesforce API"
   s.email = EMAIL
   s.homepage = HOMEPAGE
 
-  deps = Thor::Tasks::Merb::Collector.collect(File.read('config/dependencies.rb'))
-  deps.each do |dep|
-    name, version = dep.first, dep.last
-    if version
-      s.add_dependency(name, version)
-    else
-      s.add_dependency(name)
-    end
+  manifest = Bundler::ManifestFile.load(File.dirname(__FILE__) + '/Gemfile')
+  manifest.dependencies.each do |d|
+    next unless d.in?(:release)
+    s.add_dependency(d.name, d.version)
   end
 
   s.require_path = 'lib'
-  s.autorequire = GEM
-  s.files = %w(LICENSE README.markdown Rakefile config/dependencies.rb) + Dir.glob("{lib,specs}/**/*")
+  s.files = %w(LICENSE README.markdown Rakefile) + Dir.glob("lib/**/*")
 end
 
 Rake::GemPackageTask.new(@spec) do |pkg|
@@ -58,7 +49,7 @@ require 'spec'
 require 'spec/rake/spectask'
 desc "Run specs"
 Spec::Rake::SpecTask.new(:spec) do |t|
-  t.spec_opts << %w(-fs --color) << %w(-o spec/spec.opts)
+  t.spec_opts << %w(-fs --color) << %w(-O spec/spec.opts)
   t.spec_opts << '--loadby' << 'random'
   t.spec_files = %w(adapter connection models).collect { |dir| Dir["spec/#{dir}/**/*_spec.rb"] }.flatten
   t.rcov = ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true
