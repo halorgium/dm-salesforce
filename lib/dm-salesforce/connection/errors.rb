@@ -1,9 +1,12 @@
 module DataMapperSalesforce
   class Connection
-    class Error          < StandardError; end
-    class FieldNotFound  < Error; end
-    class LoginFailed    < Error; end
-    class SessionTimeout < Error; end
+    class Error             < StandardError; end
+    class FieldNotFound     < Error; end
+    class LoginFailed       < Error; end
+    class SessionTimeout    < Error; end
+    class UnknownStatusCode < Error; end
+    class ServerUnavailable < Error; end
+
 
     class SOAPError      < Error
       def initialize(message, result)

@@ -120,8 +120,10 @@ module DataMapperSalesforce
             error.fields.each do |field|
               resource.add_salesforce_error_for(field, error.message)
             end
+          when "SERVER_UNAVAILABLE"
+            raise Connection::ServerUnavailable, "The salesforce server is currently unavailable"
           else
-            raise "Got an unknown error statusCode: #{error.statusCode.inspect}"
+            raise Connection::UnknownStatusCode, "Got an unknown statusCode: #{error.statusCode.inspect}"
           end
         end
       end
