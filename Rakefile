@@ -1,12 +1,10 @@
-require 'rubygems'
-
+require File.dirname(__FILE__) + '/vendor/gems/environments/default'
 require 'rake/gempackagetask'
 require 'rubygems/specification'
 require 'date'
-require 'thor'
 
-require File.dirname(__FILE__) + '/lib/dm-salesforce/version'
-require File.dirname(__FILE__) + '/tasks/merb.thor/ops'
+require File.dirname(__FILE__) + '/lib/dm-salesforce'
+require 'bundler'
 
 GEM = "dm-salesforce"
 GEM_VERSION = DataMapperSalesforce::VERSION
@@ -15,7 +13,7 @@ EMAIL = "wycats@gmail.com"
 HOMEPAGE = "http://www.yehudakatz.com"
 SUMMARY = "A DataMapper adapter to the Salesforce API"
 
-spec = Gem::Specification.new do |s|
+@spec = Gem::Specification.new do |s|
   s.name = GEM
   s.version = GEM_VERSION
   s.platform = Gem::Platform::RUBY
@@ -27,23 +25,18 @@ spec = Gem::Specification.new do |s|
   s.email = EMAIL
   s.homepage = HOMEPAGE
 
-  deps = Thor::Tasks::Merb::Collector.collect(File.read('config/dependencies.rb'))
-  deps.each do |dep|
-    name, version = dep.first, dep.last
-    if version
-      s.add_dependency(name, version)
-    else
-      s.add_dependency(name)
-    end
+  manifest = Bundler::ManifestFile.load(File.dirname(__FILE__) + '/Gemfile')
+  manifest.dependencies.each do |d|
+    next unless d.in?(:release)
+    s.add_dependency(d.name, d.version)
   end
 
   s.require_path = 'lib'
-  s.autorequire = GEM
-  s.files = %w(LICENSE README.markdown Rakefile config/dependencies.rb) + Dir.glob("{lib,specs}/**/*")
+  s.files = %w(LICENSE README.markdown Rakefile) + Dir.glob("lib/**/*")
 end
 
-Rake::GemPackageTask.new(spec) do |pkg|
-  pkg.gem_spec = spec
+Rake::GemPackageTask.new(@spec) do |pkg|
+  pkg.gem_spec = @spec
 end
 
 desc "install the gem locally"
@@ -56,7 +49,7 @@ require 'spec'
 require 'spec/rake/spectask'
 desc "Run specs"
 Spec::Rake::SpecTask.new(:spec) do |t|
-  t.spec_opts << %w(-fs --color) << %w(-o spec/spec.opts)
+  t.spec_opts << %w(-fs --color) << %w(-O spec/spec.opts)
   t.spec_opts << '--loadby' << 'random'
   t.spec_files = %w(adapter connection models).collect { |dir| Dir["spec/#{dir}/**/*_spec.rb"] }.flatten
   t.rcov = ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true
@@ -87,8 +80,8 @@ task :release => :repackage do
   system("git", "checkout", "master")
   system("git", "branch", "-d", "releasing")
 
-  ints = Gem::Version.new(version).ints << 0
-  next_version = Gem::Version.new(ints.join(".")).bump
+  current = @spec.version.to_s + ".0"
+  next_version = Gem::Version.new(current).bump
 
   puts "Changing the version to #{next_version}."
 
