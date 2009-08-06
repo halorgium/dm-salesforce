@@ -8,7 +8,7 @@ require 'bundler'
 
 GEM = "dm-salesforce"
 GEM_VERSION = DataMapperSalesforce::VERSION
-AUTHOR = "Yehuda Katz"
+AUTHORS = ["Yehuda Katz", 'Tim Carey-Smith']
 EMAIL = "wycats@gmail.com"
 HOMEPAGE = "http://www.yehudakatz.com"
 SUMMARY = "A DataMapper adapter to the Salesforce API"
@@ -21,7 +21,7 @@ SUMMARY = "A DataMapper adapter to the Salesforce API"
   s.extra_rdoc_files = ["README.markdown", "LICENSE"]
   s.summary = SUMMARY
   s.description = s.summary
-  s.author = AUTHOR
+  s.authors = AUTHORS
   s.email = EMAIL
   s.homepage = HOMEPAGE
 
