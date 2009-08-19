@@ -104,10 +104,14 @@ module DataMapperSalesforce
             if error.message =~ /duplicate value found: (.*) duplicates/
               resource.add_salesforce_error_for($1, error.message)
             end
-          else
+          when "REQUIRED_FIELD_MISSING", "INVALID_EMAIL_ADDRESS"
             error.fields.each do |field|
               resource.add_salesforce_error_for(field, error.message)
             end
+          when "SERVER_UNAVAILABLE"
+            raise Connection::ServerUnavailable, "The salesforce server is currently unavailable"
+          else
+            raise Connection::UnknownStatusCode, "Got an unknown statusCode: #{error.statusCode.inspect}"
           end
         end
       end

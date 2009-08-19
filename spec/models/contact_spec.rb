@@ -93,6 +93,20 @@ describe "Updating a Contact" do
     end
   end
 
+  describe "when an account is specified" do
+    it "correctly connects the account when its relationship object is specified" do
+      a = Account.create(:name => "Puma Shoes Unlimited")
+      c = Contact.create(:first_name => 'Per', :last_name => 'Son', :email => "person@company.com", :account => a)
+      c.reload.account.should == a
+    end
+
+    it "correctly connects the account when its foreign key is specified" do
+      a = Account.create(:name => "Puma Shoes Unlimited")
+      c = Contact.create(:first_name => 'Per', :last_name => 'Son', :email => "person@company.com", :account_id => a.id)
+      c.reload.account.should == a
+    end
+  end
+
   describe "when updating a boolean field to false" do
     it "should update" do
       pending

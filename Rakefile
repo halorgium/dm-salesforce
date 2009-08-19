@@ -1,23 +1,19 @@
-ENV['GEM_HOME'] = 'gems'
-ENV['GEM_PATH'] = 'gems'
-require 'rubygems'
-
+require File.dirname(__FILE__) + '/vendor/gems/environments/default'
 require 'rake/gempackagetask'
 require 'rubygems/specification'
 require 'date'
-require 'thor'
 
-require File.dirname(__FILE__) + '/lib/dm-salesforce/version'
-require File.dirname(__FILE__) + '/tasks/merb.thor/ops'
+require File.dirname(__FILE__) + '/lib/dm-salesforce'
+require 'bundler'
 
 GEM = "dm-salesforce"
 GEM_VERSION = DataMapperSalesforce::VERSION
-AUTHOR = "Yehuda Katz"
+AUTHORS = ["Yehuda Katz", 'Tim Carey-Smith']
 EMAIL = "wycats@gmail.com"
 HOMEPAGE = "http://www.yehudakatz.com"
 SUMMARY = "A DataMapper adapter to the Salesforce API"
 
-spec = Gem::Specification.new do |s|
+@spec = Gem::Specification.new do |s|
   s.name = GEM
   s.version = GEM_VERSION
   s.platform = Gem::Platform::RUBY
@@ -25,27 +21,22 @@ spec = Gem::Specification.new do |s|
   s.extra_rdoc_files = ["README.markdown", "LICENSE"]
   s.summary = SUMMARY
   s.description = s.summary
-  s.author = AUTHOR
+  s.authors = AUTHORS
   s.email = EMAIL
   s.homepage = HOMEPAGE
 
-  deps = Thor::Tasks::Merb::Collector.collect(File.read('config/dependencies.rb'))
-  deps.each do |dep|
-    name, version = dep.first, dep.last
-    if version
-      s.add_dependency(name, version)
-    else
-      s.add_dependency(name)
-    end
+  manifest = Bundler::ManifestFile.load(File.dirname(__FILE__) + '/Gemfile')
+  manifest.dependencies.each do |d|
+    next unless d.in?(:release)
+    s.add_dependency(d.name, d.version)
   end
 
   s.require_path = 'lib'
-  s.autorequire = GEM
-  s.files = %w(LICENSE README.markdown Rakefile config/dependencies.rb) + Dir.glob("{lib,specs}/**/*")
+  s.files = %w(LICENSE README.markdown Rakefile) + Dir.glob("lib/**/*")
 end
 
-Rake::GemPackageTask.new(spec) do |pkg|
-  pkg.gem_spec = spec
+Rake::GemPackageTask.new(@spec) do |pkg|
+  pkg.gem_spec = @spec
 end
 
 desc "install the gem locally"
@@ -89,8 +80,8 @@ task :release => :repackage do
   system("git", "checkout", "master")
   system("git", "branch", "-d", "releasing")
 
-  ints = Gem::Version.new(version).ints << 0
-  next_version = Gem::Version.new(ints.join(".")).bump
+  current = @spec.version.to_s + ".0"
+  next_version = Gem::Version.new(current).bump
 
   puts "Changing the version to #{next_version}."
 

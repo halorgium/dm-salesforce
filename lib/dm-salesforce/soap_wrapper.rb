@@ -32,17 +32,24 @@ module DataMapperSalesforce
           ARGV.replace %W(--wsdl #{wsdl_path} --module_path #{module_name} --classdef #{module_name} --type client)
           load wsdl2ruby
           ARGV.replace old_args
-          FileUtils.rm Dir["*Client.rb"]
+          (Dir["*.rb"] - files).each do |filename|
+            FileUtils.rm(filename)
+          end
         end
       end
 
       $:.push wsdl_api_dir
       require "#{module_name}Driver"
+      $:.delete wsdl_api_dir
+    end
+
+    def files
+      ["#{module_name}.rb", "#{module_name}MappingRegistry.rb", "#{module_name}Driver.rb"]
     end
 
     def files_exist?
-      %w( .rb Driver.rb MappingRegistry.rb ).all? do |suffix|
-        File.exist?("#{wsdl_api_dir}/#{module_name}#{suffix}")
+      files.all? do |name|
+        File.exist?("#{wsdl_api_dir}/#{name}")
       end
     end
 
@@ -51,3 +58,4 @@ module DataMapperSalesforce
     end
   end
 end
+
