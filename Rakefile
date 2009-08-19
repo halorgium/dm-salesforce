@@ -58,7 +58,7 @@ require 'spec'
 require 'spec/rake/spectask'
 desc "Run specs"
 Spec::Rake::SpecTask.new(:spec) do |t|
-  t.spec_opts << %w(-fs --color) << %w(-o spec/spec.opts)
+  t.spec_opts << %w(-fs --color) << %w(-O spec/spec.opts)
   t.spec_opts << '--loadby' << 'random'
   t.spec_files = %w(adapter connection models).collect { |dir| Dir["spec/#{dir}/**/*_spec.rb"] }.flatten
   t.rcov = ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true
