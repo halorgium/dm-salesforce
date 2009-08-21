@@ -11,4 +11,6 @@ class Account
 
   property :id, String, :serial => true
   property :name, String
+
+  has n, :contacts
 end

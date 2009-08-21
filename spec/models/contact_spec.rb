@@ -96,8 +96,8 @@ describe "Updating a Contact" do
   describe "when an account is specified" do
     it "correctly connects the account when its relationship object is specified" do
       a = Account.create(:name => "Puma Shoes Unlimited")
-      c = Contact.create(:first_name => 'Per', :last_name => 'Son', :email => "person@company.com", :account => a)
-      c.reload.account.should == a
+      c = Contact.get  Contact.create(:first_name => 'Per', :last_name => 'Son', :email => "person@company.com", :account => a).id
+      c.account.should == a
     end
 
     it "correctly connects the account when its foreign key is specified" do

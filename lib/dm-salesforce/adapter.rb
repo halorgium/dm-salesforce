@@ -65,7 +65,7 @@ module DataMapperSalesforce
         [ make_salesforce_obj(query, attributes, key_condition) ]
       else
         read_many(query).map do |obj|
-          obj = make_salesforce_obj(query, attributes, x.key)
+          obj = make_salesforce_obj(query, attributes, obj.key)
         end
       end
       connection.update(arr).size
@@ -136,11 +136,11 @@ module DataMapperSalesforce
       repository = query.repository
       properties = query.fields
       properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
-      conditions = query.conditions.map {|c| SQL.from_condition(c, repository)}.compact.join(") AND (")
+      conditions = query.conditions.map {|c| from_condition(c, repository)}.compact.join(") AND (")
 
       sql = "SELECT #{query.fields.map {|f| f.field}.join(", ")} from #{query.model.storage_name(repository.name)}"
       sql << " WHERE (#{conditions})" unless conditions.empty?
-      sql << " ORDER BY #{SQL.order(query.order[0])}" unless query.order.empty?
+      sql << " ORDER BY #{order(query.order[0])}" unless query.order.empty?
       sql << " LIMIT #{query.limit}" if query.limit
 
       DataMapper.logger.debug sql
@@ -190,6 +190,73 @@ module DataMapperSalesforce
         return value[0..14] if properties.include?(property.name)
       end
       value
+    end
+
+    def from_condition(condition, repository)
+      slug = condition.class.slug
+      condition = case condition
+                  when DataMapper::Query::Conditions::AbstractOperation then condition.operands.first
+                  when DataMapper::Query::Conditions::AbstractComparison
+                    if condition.subject.kind_of?(DataMapper::Associations::Relationship)
+                      foreign_key_conditions(condition)
+                    else
+                      condition
+                    end
+                  else raise("Unkown condition type #{condition.class}: #{condition.inspect}")
+                  end
+
+      value = condition.value
+      prop = condition.subject
+      operator = case slug
+                 when String then operator
+                 when :eql, :in then equality_operator(value)
+                 when :not      then inequality_operator(value)
+                 when :like     then "LIKE #{quote_value(value)}"
+                 when :gt       then "> #{quote_value(value)}"
+                 when :gte      then ">= #{quote_value(value)}"
+                 when :lt       then "< #{quote_value(value)}"
+                 when :lte      then "<= #{quote_value(value)}"
+                 else raise "CAN HAS CRASH?"
+                 end
+      case prop
+      when DataMapper::Property
+        "#{prop.field} #{operator}"
+      when DataMapper::Query::Path
+        rels = prop.relationships
+        names = rels.map {|r| storage_name(r, repository) }.join(".")
+        "#{names}.#{prop.field} #{operator}"
+      end
+    end
+
+    def storage_name(rel, repository)
+      rel.parent_model.storage_name(repository.name)
+    end
+
+    def order(direction)
+      "#{direction.target.field} #{direction.operator.to_s.upcase}"
+    end
+
+    def equality_operator(value)
+      case value
+      when Array then "IN #{quote_value(value)}"
+      else "= #{quote_value(value)}"
+      end
+    end
+
+    def inequality_operator(value)
+      case value
+      when Array then "NOT IN #{quote_value(value)}"
+      else "!= #{quote_value(value)}"
+      end
+    end
+
+    def quote_value(value)
+      case value
+      when Array then "(#{value.map {|v| quote_value(v)}.join(", ")})"
+      when NilClass then "NULL"
+      when String then "'#{value.gsub(/'/, "\\'").gsub(/\\/, %{\\\\})}'"
+      else "#{value}"
+      end
     end
   end
 end
