@@ -8,7 +8,7 @@ gem 'rcov',                      :only => :test
 gem 'ruby-debug',                :only => :test
 gem 'bundler',        '~>0.5.0', :only => :test
 
-gem "httpclient",     "=2.1.2"
+gem "httpclient",     "=2.1.5.2"
 gem "extlib",         "~> 0.9.9"
 gem "dm-core",        "~> 0.9.8"
 gem "dm-validations", "~> 0.9.8"
