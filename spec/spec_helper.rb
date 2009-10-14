@@ -1,4 +1,7 @@
-require File.dirname(__FILE__) + '/../vendor/gems/environments/default'
+require File.dirname(__FILE__) + '/../vendor/gems/environment'
+
+Bundler.require_env(:test)
+
 require File.dirname(__FILE__) + '/../lib/dm-salesforce'
 require File.dirname(__FILE__) + '/fixtures/account'
 require File.dirname(__FILE__) + '/fixtures/contact'

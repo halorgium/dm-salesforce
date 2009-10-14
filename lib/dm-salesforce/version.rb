@@ -1,3 +1,3 @@
 module DataMapperSalesforce
-  VERSION = "0.9.10"
+  VERSION = "0.9.13"
 end

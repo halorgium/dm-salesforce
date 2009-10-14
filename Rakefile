@@ -1,14 +1,16 @@
-require File.dirname(__FILE__) + '/vendor/gems/environments/default'
+require File.dirname(__FILE__) + '/vendor/gems/environment'
 require 'rake/gempackagetask'
 require 'rubygems/specification'
-require 'date'
-
-require File.dirname(__FILE__) + '/lib/dm-salesforce'
 require 'bundler'
+require 'date'
+require 'pp'
+
+Bundler.require_env
+require File.dirname(__FILE__) + '/lib/dm-salesforce'
 
 GEM = "dm-salesforce"
 GEM_VERSION = DataMapperSalesforce::VERSION
-AUTHOR = "Yehuda Katz"
+AUTHORS = ["Yehuda Katz", 'Tim Carey-Smith']
 EMAIL = "wycats@gmail.com"
 HOMEPAGE = "http://www.yehudakatz.com"
 SUMMARY = "A DataMapper adapter to the Salesforce API"
@@ -21,13 +23,13 @@ SUMMARY = "A DataMapper adapter to the Salesforce API"
   s.extra_rdoc_files = ["README.markdown", "LICENSE"]
   s.summary = SUMMARY
   s.description = s.summary
-  s.author = AUTHOR
+  s.authors = AUTHORS
   s.email = EMAIL
   s.homepage = HOMEPAGE
 
-  manifest = Bundler::ManifestFile.load(File.dirname(__FILE__) + '/Gemfile')
+  manifest = Bundler::Environment.load(File.dirname(__FILE__) + '/Gemfile')
   manifest.dependencies.each do |d|
-    next unless d.in?(:release)
+    next if d.only && d.only.include?('test')
     s.add_dependency(d.name, d.version)
   end
 
