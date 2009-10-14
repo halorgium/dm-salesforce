@@ -24,31 +24,35 @@ module DataMapperSalesforce
         FileUtils.mkdir_p wsdl_api_dir
       end
 
-      unless files_exist?
-        soap4r = Gem.loaded_specs['soap4r']
-        wsdl2ruby = File.expand_path(File.join(soap4r.full_gem_path, soap4r.bindir, "wsdl2ruby.rb"))
-        Dir.chdir(wsdl_api_dir) do
-          old_args = ARGV.dup
-          ARGV.replace %W(--wsdl #{wsdl_path} --module_path #{module_name} --classdef #{module_name} --type client)
-          load wsdl2ruby
-          ARGV.replace old_args
-          (Dir["*.rb"] - files).each do |filename|
-            FileUtils.rm(filename)
-          end
-        end
-      end
+      generate_files unless files_exist?
 
       $:.push wsdl_api_dir
       require "#{module_name}Driver"
       $:.delete wsdl_api_dir
     end
 
-    def files
-      ["#{module_name}.rb", "#{module_name}MappingRegistry.rb", "#{module_name}Driver.rb"]
+    # Good candidate for shipping out into a Rakefile.
+    def generate_files
+      require 'wsdl/soap/wsdl2ruby'
+
+      wsdl2ruby          = WSDL::SOAP::WSDL2Ruby.new
+      wsdl2ruby.logger   = $LOG
+      wsdl2ruby.location = wsdl_path
+      wsdl2ruby.basedir  = wsdl_api_dir
+
+      wsdl2ruby.opt.merge!({
+        'classdef'         => module_name,
+        'module_path'      => module_name,
+        'mapping_registry' => nil,
+        'driver'           => nil,
+        'client_skelton'   => nil,
+      })
+
+      wsdl2ruby.run
     end
 
     def files_exist?
-      files.all? do |name|
+      ["#{module_name}.rb", "#{module_name}MappingRegistry.rb", "#{module_name}Driver.rb"].all? do |name|
         File.exist?("#{wsdl_api_dir}/#{name}")
       end
     end
