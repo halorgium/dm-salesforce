@@ -17,47 +17,8 @@ module DataMapperSalesforce
 
     attr_reader :api_dir
 
-    def normalize_uri(uri_or_options)
-      if uri_or_options.kind_of?(Addressable::URI)
-        return uri_or_options
-      end
-
-      if uri_or_options.kind_of?(String)
-        uri_or_options = Addressable::URI.parse(uri_or_options)
-      end
-
-      if @api_dir = uri_or_options.delete(:apidir)
-          @api_dir.insert(0, Merb.root + File::SEPARATOR) unless @api_dir[0] == File::SEPARATOR[0]
-      end
-      @api_dir ||= ENV["SALESFORCE_DIR"] || "#{ENV["HOME"]}/.salesforce"
-
-      adapter  = uri_or_options.delete(:adapter).to_s
-      user     = uri_or_options.delete(:username)
-      password = uri_or_options.delete(:password)
-      host     = uri_or_options.delete(:host) || "."
-      path     = uri_or_options.delete(:path)
-      query    = uri_or_options.to_a.map { |pair| pair * '=' } * '&'
-      query    = nil if query == ''
-
-      return Addressable::URI.new({:adapter => adapter, :user => user, :password => password, :host => host, :path => path, :query => query})
-    end
-
     def connection
-      @connection ||= Connection.new(@uri.user, @uri.password, @uri.host + @uri.path, api_dir)
-    end
-
-    def read_many(query)
-      ::DataMapper::Collection.new(query) do |set|
-        read(query) do |result|
-          set.load(result)
-        end
-      end
-    end
-
-    def read_one(query)
-      read(query) do |result|
-        return query.model.load(result, query)
-      end
+        @connection ||= Connection.new(options["username"], options["password"], options["path"], options["apidir"])
     end
 
     def create(resources)
@@ -153,16 +114,20 @@ module DataMapperSalesforce
 
     # SOQL doesn't support anything but count(), so we catch it here.
     def aggregate(query)
-        query.fields.map do |f|
-            unless f.target == :all && f.operator == :count
-                raise ArgumentError, %{Aggregate function #{f.operator} not supported in SOQL}
-            end
+      query.fields.map do |f|
+        unless f.target == :all && f.operator == :count
+          raise ArgumentError, %{Aggregate function #{f.operator} not supported in SOQL}
         end
-        read(query)
+      end
+      execute_query(query)
+    end
+
+    def read(query)
+      return query.model.load(execute_query(query), query)
     end
 
     private
-    def read(query, &block)
+    def execute_query(query)
       repository = query.repository
       properties = query.fields
       properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
@@ -171,7 +136,7 @@ module DataMapperSalesforce
       fields = query.fields.map do |f|
         case f
           when DataMapper::Property
-            f.field(repository.name)
+            f.field
           when DataMapper::Query::Operator
             %{#{f.operator}()}
           else
@@ -184,22 +149,23 @@ module DataMapperSalesforce
       sql << " ORDER BY #{SQL.order(query.order[0])}" unless query.order.empty?
       sql << " LIMIT #{query.limit}" if query.limit
 
-      DataMapper.logger.debug sql
+#      DataMapper.logger.debug sql
+      $LOG.info { sql }
 
       result = connection.query(sql)
 
       # This catches aggregate cases, where the size field holds our
       # non-model result.
-      return unless result.records
-      return [result.size] if result.records.reject(&:nil?).empty?
+      return nil           unless result.size > 0
+      return [result.size] unless result.records
 
-      result.records.each do |record|
-        accum = []
+      return result.records.map do |record|
+        accum = {}
         properties_with_indexes.each do |(property, idx)|
-          meth = connection.field_name_for(property.model.storage_name(repository.name), property.field(repository.name))
-          accum[idx] = normalize_id_value(query.model, property, record.send(meth))
+          meth = connection.field_name_for(property.model.storage_name(repository.name), property.field)
+          accum[property] = normalize_id_value(query.model, property, record.send(meth))
         end
-        yield accum
+        accum
       end
     end
 
@@ -220,7 +186,6 @@ module DataMapperSalesforce
 
     def normalize_id_value(klass, property, value)
       return value unless value
-      return value[0..14] if property.extra_options[:salesforce_id] == true
       if klass.respond_to?(:salesforce_id_properties)
         properties = Array(klass.salesforce_id_properties).map {|p| p.to_sym}
         return value[0..14] if properties.include?(property.name)
