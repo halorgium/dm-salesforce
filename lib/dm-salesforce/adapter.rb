@@ -17,15 +17,13 @@ module DataMapperSalesforce
       end
     end
 
-    attr_reader :api_dir
-
     def connection
-        @connection ||= Connection.new(options["username"], options["password"], options["path"], options["apidir"])
+      @connection ||= Connection.new(options["username"], options["password"], options["path"], options["apidir"])
     end
 
     def create(resources)
       arr = resources.map do |resource|
-        obj = make_salesforce_obj(resource, resource.dirty_attributes, nil)
+        make_salesforce_obj(resource, resource.dirty_attributes, nil)
       end
 
       result = connection.create(arr)
@@ -47,8 +45,8 @@ module DataMapperSalesforce
       arr = if key_condition = query.conditions.find {|op,prop,val| prop.key?}
         [ make_salesforce_obj(query, attributes, key_condition.last) ]
       else
-        read_many(query).map do |obj|
-          obj = make_salesforce_obj(query, attributes, x.key)
+        execute_query(query).map do |obj|
+          obj = make_salesforce_obj(query, attributes, obj.key)
         end
       end
       connection.update(arr).size
@@ -132,7 +130,6 @@ module DataMapperSalesforce
     def execute_query(query)
       repository = query.repository
       properties = query.fields
-      properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
       conditions = query.conditions.map {|c| from_condition(c, repository)}.compact.join(") AND (")
 
       fields = query.fields.map do |f|
@@ -151,23 +148,21 @@ module DataMapperSalesforce
       sql << " ORDER BY #{order(query.order[0])}" unless query.order.empty?
       sql << " LIMIT #{query.limit}" if query.limit
 
-#      DataMapper.logger.debug sql
-      $LOG.info { sql }
+      DataMapper.logger.debug sql
 
-      result = connection.query(sql)
+      response = connection.query(sql)
 
-      # This catches aggregate cases, where the size field holds our
-      # non-model result.
-      return nil           unless result.size > 0
-      return [result.size] unless result.records
+      # This catches the aggregate case, where the size field holds
+      # our non-model result.
+      return nil             unless response.size > 0
+      return [response.size] unless response.records
 
-      return result.records.map do |record|
-        accum = {}
-        properties_with_indexes.each do |(property, idx)|
+      return response.records.inject([]) do |results, record|
+        results << properties.inject({}) do |result, property|
           meth = connection.field_name_for(property.model.storage_name(repository.name), property.field)
-          accum[property] = normalize_id_value(query.model, property, record.send(meth))
+          result[property] = normalize_id_value(query.model, property, record.send(meth))
+          result
         end
-        accum
       end
     end
 
