@@ -23,7 +23,7 @@ module DataMapperSalesforce
 
     def create(resources)
       arr = resources.map do |resource|
-        make_salesforce_obj(resource, resource.dirty_attributes, nil)
+        make_salesforce_obj(resource, resource.dirty_attributes)
       end
 
       result = connection.create(arr)
@@ -41,25 +41,33 @@ module DataMapperSalesforce
       e.successful_records.size
     end
 
-    def update(attributes, query)
-      arr = if key_condition = query.conditions.find {|op,prop,val| prop.key?}
-        [ make_salesforce_obj(query, attributes, key_condition.last) ]
+    def update(attributes, collection)
+      query = collection.query
+
+      arr = if key_condition = query.conditions.find { |c| c.subject.key? }
+        [ make_salesforce_obj(query, attributes, key_condition) ]
       else
+        # FIXME: this ain't right
         execute_query(query).map do |obj|
           obj = make_salesforce_obj(query, attributes, obj.key)
         end
       end
+
       connection.update(arr).size
+
     rescue Connection::UpdateError => e
       populate_errors_for(e.records, arr, query)
       e.successful_records.size
     end
 
-    def delete(query)
-      keys = if key_condition = query.conditions.find {|op,prop,val| prop.key?}
-        [key_condition.last]
+    def delete(collection)
+      query = collection.query
+
+      keys = if key_condition = query.conditions.find { |c| c.subject.key? }
+        [key_condition.value]
       else
-        read_many(query).map {|r| r.key}
+        # FIXME: this ain't right
+        execute_query(query).map { |r| r.key }
       end
 
       connection.delete(keys).size
@@ -112,24 +120,46 @@ module DataMapperSalesforce
       true
     end
 
-    # SOQL doesn't support anything but count(), so we catch it here.
+    # Reading responses back from SELECTS:
+    #   In the typical case, response.size reflects the # of records returned.
+    #   In the aggregation case, response.size reflects the count.
+    #
+    # Interpretation of this field requires knowledge of whether we
+    # are expecting an aggregate result, thus the response is
+    # processed differently depending on invocation.
+    def read(query)
+      properties = query.fields
+      repository = query.repository
+
+      response = execute_query(query)
+      return [] unless response.records
+
+      rows = response.records.inject([]) do |results, record|
+        results << properties.inject({}) do |result, property|
+          meth = connection.field_name_for(property.model.storage_name(repository.name), property.field)
+          result[property] = normalize_id_value(query.model, property, record.send(meth))
+          result
+        end
+      end
+
+      query.model.load(rows, query)
+    end
+
+    # SOQL doesn't support anything but count(), so we catch it here
+    # and interpret the result.
     def aggregate(query)
-      query.fields.map do |f|
+      query.fields.each do |f|
         unless f.target == :all && f.operator == :count
           raise ArgumentError, %{Aggregate function #{f.operator} not supported in SOQL}
         end
       end
-      execute_query(query)
-    end
 
-    def read(query)
-      return query.model.load(execute_query(query), query)
+      [ execute_query(query).size ]
     end
 
     private
     def execute_query(query)
       repository = query.repository
-      properties = query.fields
       conditions = query.conditions.map {|c| from_condition(c, repository)}.compact.join(") AND (")
 
       fields = query.fields.map do |f|
@@ -148,39 +178,30 @@ module DataMapperSalesforce
       sql << " ORDER BY #{order(query.order[0])}" unless query.order.empty?
       sql << " LIMIT #{query.limit}" if query.limit
 
-      DataMapper.logger.debug sql
+      DataMapper.logger.debug sql if DataMapper.logger
 
-      response = connection.query(sql)
-
-      # This catches the aggregate case, where the size field holds
-      # our non-model result.
-      return nil             unless response.size > 0
-      return [response.size] unless response.records
-
-      return response.records.inject([]) do |results, record|
-        results << properties.inject({}) do |result, property|
-          meth = connection.field_name_for(property.model.storage_name(repository.name), property.field)
-          result[property] = normalize_id_value(query.model, property, record.send(meth))
-          result
-        end
-      end
+      connection.query(sql)
     end
 
-    def make_salesforce_obj(query, attrs, key)
+    def make_salesforce_obj(query, attrs, key = nil)
       klass_name = query.model.storage_name(query.repository.name)
       values = {}
+
       if key
-        key_value = query.conditions.find {|op,prop,val| prop.key?}.last
+        key_value = query.conditions.find { |c| c.subject.key? }.value
         values["id"] = normalize_id_value(query.model, query.model.properties[:id], key_value)
       end
 
-      attrs.each do |property,value|
+      attrs.each do |property, value|
+        next if property.serial? and value.nil?
         normalized_value = normalize_id_value(query.model, property, value)
-        values[property.field(query.repository.name)] = normalized_value
+        values[property.field] = normalized_value
       end
+
       connection.make_object(klass_name, values)
     end
 
+    # This could be cheaper.
     def normalize_id_value(klass, property, value)
       return value unless value
       if klass.respond_to?(:salesforce_id_properties)
