@@ -4,12 +4,13 @@ module DataMapperSalesforce
   class SoapWrapper
     class ClassesFailedToGenerate < StandardError; end
 
+    attr_reader :module_name, :driver_name, :wsdl_path, :api_dir
+
     def initialize(module_name, driver_name, wsdl_path, api_dir)
       @module_name, @driver_name, @wsdl_path, @api_dir = module_name, driver_name, File.expand_path(wsdl_path), File.expand_path(api_dir)
       generate_soap_classes
       driver
     end
-    attr_reader :module_name, :driver_name, :wsdl_path, :api_dir
 
     def driver
       @driver ||= Object.const_get(module_name).const_get(driver_name).new
@@ -36,7 +37,7 @@ module DataMapperSalesforce
       require 'wsdl/soap/wsdl2ruby'
 
       wsdl2ruby          = WSDL::SOAP::WSDL2Ruby.new
-      wsdl2ruby.logger   = $LOG
+      wsdl2ruby.logger   = $LOG if $LOG
       wsdl2ruby.location = wsdl_path
       wsdl2ruby.basedir  = wsdl_api_dir
 
@@ -49,6 +50,8 @@ module DataMapperSalesforce
       })
 
       wsdl2ruby.run
+
+      raise ClassesFailedToGenerate unless files_exist?
     end
 
     def files_exist?
