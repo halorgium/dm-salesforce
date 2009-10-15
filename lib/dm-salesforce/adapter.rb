@@ -1,5 +1,7 @@
 module DataMapperSalesforce
   class Adapter < DataMapper::Adapters::AbstractAdapter
+    include SQL
+
     def initialize(name, uri_or_options)
       super
       @resource_naming_convention = proc do |value|
@@ -131,7 +133,7 @@ module DataMapperSalesforce
       repository = query.repository
       properties = query.fields
       properties_with_indexes = Hash[*properties.zip((0...properties.size).to_a).flatten]
-      conditions = query.conditions.map {|c| SQL.from_condition(c, repository)}.compact.join(") AND (")
+      conditions = query.conditions.map {|c| from_condition(c, repository)}.compact.join(") AND (")
 
       fields = query.fields.map do |f|
         case f
@@ -146,7 +148,7 @@ module DataMapperSalesforce
 
       sql = "SELECT #{fields} from #{query.model.storage_name(repository.name)}"
       sql << " WHERE (#{conditions})" unless conditions.empty?
-      sql << " ORDER BY #{SQL.order(query.order[0])}" unless query.order.empty?
+      sql << " ORDER BY #{order(query.order[0])}" unless query.order.empty?
       sql << " LIMIT #{query.limit}" if query.limit
 
 #      DataMapper.logger.debug sql
