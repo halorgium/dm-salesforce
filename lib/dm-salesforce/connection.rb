@@ -32,9 +32,8 @@ module DataMapperSalesforce
     end
 
     def make_object(klass_name, values)
-      klass = SalesforceAPI.const_get(klass_name)
-      obj = klass.new
-      values.each do |property,value|
+      obj = SalesforceAPI.const_get(klass_name).new
+      values.each do |property, value|
         field = field_name_for(klass_name, property)
         if value.nil? or value == ""
           obj.fieldsToNull.push(field)

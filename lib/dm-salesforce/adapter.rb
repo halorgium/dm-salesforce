@@ -29,13 +29,14 @@ module DataMapperSalesforce
       result = connection.create(arr)
       result.each_with_index do |record, i|
         resource = resources[i]
-        id_field = resource.class.key(resource.repository.name).find {|p| p.serial?}
-        if id_field
+        if id_field = resource.class.key.find {|p| p.serial?}
           normalized_value = normalize_id_value(resource.class, id_field, record.id)
           id_field.set!(resource, normalized_value)
         end
       end
+
       result.size
+
     rescue Connection::CreateError => e
       populate_errors_for(e.records, resources)
       e.successful_records.size
@@ -43,15 +44,7 @@ module DataMapperSalesforce
 
     def update(attributes, collection)
       query = collection.query
-
-      arr = if key_condition = query.conditions.find { |c| c.subject.key? }
-        [ make_salesforce_obj(query, attributes, key_condition) ]
-      else
-        # FIXME: this ain't right
-        execute_query(query).map do |obj|
-          obj = make_salesforce_obj(query, attributes, obj.key)
-        end
-      end
+      arr   = collection.map { |obj| make_salesforce_obj(query, attributes) }
 
       connection.update(arr).size
 
@@ -62,13 +55,7 @@ module DataMapperSalesforce
 
     def delete(collection)
       query = collection.query
-
-      keys = if key_condition = query.conditions.find { |c| c.subject.key? }
-        [key_condition.value]
-      else
-        # FIXME: this ain't right
-        execute_query(query).map { |r| r.key }
-      end
+      keys  = collection.map { |r| r.key }.flatten.uniq
 
       connection.delete(keys).size
     end
@@ -145,6 +132,7 @@ module DataMapperSalesforce
       query.model.load(rows, query)
     end
 
+    # http://www.salesforce.com/us/developer/docs/api90/Content/sforce_api_calls_soql.htm
     # SOQL doesn't support anything but count(), so we catch it here
     # and interpret the result.
     def aggregate(query)
@@ -183,32 +171,29 @@ module DataMapperSalesforce
       connection.query(sql)
     end
 
-    def make_salesforce_obj(query, attrs, key = nil)
-      klass_name = query.model.storage_name(query.repository.name)
-      values = {}
+    def make_salesforce_obj(from, with_attrs)
+      klass_name = from.model.storage_name(from.repository.name)
+      values     = {}
 
-      if key
-        key_value = query.conditions.find { |c| c.subject.key? }.value
-        values["id"] = normalize_id_value(query.model, query.model.properties[:id], key_value)
+      # FIXME: query.conditions is potentially a tree now
+      if from.is_a?(::DataMapper::Query)
+        key_value    = from.conditions.find { |c| c.subject.key? }.value
+        values["id"] = normalize_id_value(from.model, from.model.properties[:id], key_value)
       end
 
-      attrs.each do |property, value|
-        next if property.serial? and value.nil?
-        normalized_value = normalize_id_value(query.model, property, value)
-        values[property.field] = normalized_value
+      with_attrs.each do |property, value|
+        next if property.serial? || property.key? and value.nil?
+        values[property.field] = normalize_id_value(from.model, property, value)
       end
 
       connection.make_object(klass_name, values)
     end
 
-    # This could be cheaper.
     def normalize_id_value(klass, property, value)
-      return value unless value
-      if klass.respond_to?(:salesforce_id_properties)
-        properties = Array(klass.salesforce_id_properties).map {|p| p.to_sym}
-        return value[0..14] if properties.include?(property.name)
-      end
-      value
+      return nil unless value
+      properties = Array(klass.send(:salesforce_id_properties)).map { |p| p.to_sym } rescue []
+      return properties.include?(property.name) ? value[0..14] : value
     end
+
   end
 end
