@@ -8,15 +8,14 @@ only :test do
   gem 'rake'
   gem 'rcov'
   gem 'ruby-debug'
-  gem 'bundler',        '~>0.6.0'
+  gem 'bundler',      '~>0.6.0'
 end
 
 gem "httpclient",     "=2.1.5.2"
 gem "extlib",         "~> 0.9.9"
-gem "dm-core",        "~> 0.10.0"
-gem "dm-validations", "~> 0.10.0"
-gem "soap4r",         "~> 1.5.8", :require_as => [ ]
-gem "data_objects",   "~> 0.10.0"
+gem "dm-core",        "~> 0.10.1"
+gem "dm-validations", "~> 0.10.1"
 gem "do_sqlite3",     "~> 0.10.0"
+gem "soap4r",         "~> 1.5.8", :require_as => [ ]
 
 # vim:ft=ruby
