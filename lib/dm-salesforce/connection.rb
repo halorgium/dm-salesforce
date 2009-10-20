@@ -27,6 +27,10 @@ module DataMapperSalesforce
       @wrapper.wsdl_path
     end
 
+    def api_dir
+      @wrapper.api_dir
+    end
+
     def organization_id
       @user_details && @user_details.organizationId
     end
@@ -94,7 +98,7 @@ module DataMapperSalesforce
       begin
         result = driver.login(:username => @username, :password => @password).result
       rescue SOAP::FaultError => error
-        if error.faultcode.to_obj == "sf:INVALID_LOGIN"
+        if error.faultcode.to_obj == "sf:INVALID_LOGIN" || error.faultcode.to_obj == "INVALID_LOGIN"
           raise LoginFailed, "Could not login to Salesforce; #{error.faultstring.text}"
         else
           raise

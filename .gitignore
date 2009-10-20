@@ -4,5 +4,5 @@ config/*.wsdl
 gems/
 coverage/
 pkg/
-bin
+gbin
 tmp
