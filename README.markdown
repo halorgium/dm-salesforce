@@ -79,12 +79,15 @@ To get a test environment going with the free development tools you'll need to f
         VALID_SELF_SERVICE_USER = DataMapperSalesforce::UserDetails.new("quentin@example.com", "foo")
 * Run 'bin/irb' and you should have access to the Account and Contact models
 
-Special Thanks to Engine Yard Employees who helped
+Special Thanks to those who helped
 ==================================================
+* Yehuda Katz
 * Corey Donohoe
+* Tim Carey-Smith
 * Andy Delcambre
 * Ben Burkert
 * Larry Diehl
+* Jordan Ritter
 
 [setup]: http://img.skitch.com/20090204-gaxdfxbi1emfita5dax48ids4m.jpg "Click on Setup"
 [getwsdl]: http://img.skitch.com/20090204-nhurnuxwf5g3ufnjk2xkfjc5n4.jpg "Expand and Save"
