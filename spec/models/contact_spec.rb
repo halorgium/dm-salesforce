@@ -57,7 +57,7 @@ describe "Updating a Contact" do
   describe "when the email address is invalid" do
     it "is invalid" do
       c = Contact.create(:first_name => 'Per', :last_name => 'Son', :email => "person@company.com")
-      c.update_attributes(:email => 'person')
+      c.update(:email => 'person')
       c.should_not be_valid
       c.errors.size.should == 1
       c.errors.on(:email).should == ["Email: invalid email address: person"]
@@ -68,7 +68,7 @@ describe "Updating a Contact" do
     it "is invalid" do
       pending
       c = Contact.create(:first_name => 'Per', :last_name => 'Son', :email => "person@company.com")
-      c.update_attributes(:irc_nick => 'qblake_')
+      c.update(:irc_nick => 'qblake_')
       c.should_not be_valid
       c.errors.size.should == 1
       errors = c.errors.on(:irc_nick)
@@ -80,7 +80,7 @@ describe "Updating a Contact" do
   describe "when the last name is missing" do
     it "is invalid" do
       c = Contact.create(:first_name => 'Per', :last_name => 'Son', :email => "person@company.com")
-      c.update_attributes(:last_name => "")
+      c.update(:last_name => "")
       c.should_not be_valid
       c.errors.size.should == 1
       c.errors.on(:last_name).should == ["Required fields are missing: [LastName]"]

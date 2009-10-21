@@ -49,7 +49,7 @@ module DataMapperSalesforce
       connection.update(arr).size
 
     rescue Connection::UpdateError => e
-      populate_errors_for(e.records, arr, query)
+      populate_errors_for(e.records, arr, collection)
       e.successful_records.size
     end
 
@@ -60,16 +60,19 @@ module DataMapperSalesforce
       connection.delete(keys).size
     end
 
-    def populate_errors_for(records, resources, query = nil)
+    def populate_errors_for(records, resources, collection = nil)
       records.each_with_index do |record,i|
         next if record.success
+        resource = nil
 
         if resources[i].is_a?(DataMapper::Resource)
           resource = resources[i]
+        elsif collection && resources[i].is_a?(SalesforceAPI::SObject)
+          resource = collection.detect { |o| o.id = resources[i].id }
         elsif resources[i].is_a?(SalesforceAPI::SObject)
-          resource = query.repository.identity_map(query.model)[[resources[i].id]]
+          resource = collection.detect { |o| o.id = resources[i].id }
         else
-          resource = query.repository.identity_map(query.model)[[resources[i]]]
+          resource = collection.detect {|o| o.id == resources[i]}
         end
 
         resource.class.send(:include, SalesforceExtensions)

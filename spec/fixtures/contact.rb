@@ -1,6 +1,6 @@
 class Contact
   include DataMapper::Resource
-  
+
   def self.default_repository_name
     :salesforce
   end
