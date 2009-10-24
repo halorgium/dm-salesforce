@@ -113,6 +113,7 @@ module DataMapper::Salesforce
         if result.all? {|r| r.success}
           result
         else
+          # TODO: be smarter about exceptions here
           raise exception_class.new("Got some errors while #{message} Salesforce objects", result)
         end
       end

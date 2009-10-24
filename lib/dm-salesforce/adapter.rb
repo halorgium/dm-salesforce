@@ -21,6 +21,18 @@ module DataMapper::Salesforce
       @connection ||= Connection.new(options["username"], options["password"], options["path"], options["apidir"])
     end
 
+    # FIXME: DM Adapters customarily throw exceptions when they
+    # experience errors, otherwise failed operations
+    # (e.g. Resource#save) still return true and thus confuse the
+    # caller.
+    #
+    # Someone needs to make a decision about legacy support and the
+    # consequences of changing the behaviour from
+    # broken-but-accustomed to correct-but-maybe-unexpected.  Maybe a
+    # config file option about whether to raise exceptions or for the
+    # user to always check Model#valid? + Model#salesforce_errors?
+    #
+    # Needs to be applied to all CRUD operations.
     def create(resources)
       arr = resources.map do |resource|
         make_salesforce_obj(resource, resource.dirty_attributes)
