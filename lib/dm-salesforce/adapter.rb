@@ -21,6 +21,18 @@ module DataMapperSalesforce
       @connection ||= Connection.new(options["username"], options["password"], options["path"], options["apidir"])
     end
 
+    # FIXME: DM Adapters customarily throw exceptions when they
+    # experience errors, otherwise failed operations
+    # (e.g. Resource#save) still return true and thus confuse the
+    # caller.
+    #
+    # Someone needs to make a decision about legacy support and the
+    # consequences of changing the behaviour from
+    # broken-but-accustomed to correct-but-maybe-unexpected.  Maybe a
+    # config file option about whether to raise exceptions or for the
+    # user to always check Model#valid? + Model#salesforce_errors?
+    #
+    # Needs to be applied to all CRUD operations.
     def create(resources)
       arr = resources.map do |resource|
         make_salesforce_obj(resource, resource.dirty_attributes)
@@ -60,9 +72,18 @@ module DataMapperSalesforce
       connection.delete(keys).size
     end
 
+    # TODO: This should not delay-include the error methods on the
+    # models, otherwise there's no clean/predictable way to access
+    # Resource#salesforce_errors.  See FIXME wrt CRUD adapter error
+    # propagation for why.
+    #
+    # FIXME: currently, first Resource#save fail (i.e. duplicate key)
+    # populates only Resource#salesforce_errors.  Second call actually
+    # populates Resource#errors too.  Needs investigation.
     def populate_errors_for(records, resources, collection = nil)
       records.each_with_index do |record,i|
         next if record.success
+
         resource = nil
 
         if resources[i].is_a?(DataMapper::Resource)
@@ -79,8 +100,11 @@ module DataMapperSalesforce
         record.errors.each do |error|
           case error.statusCode
           when "DUPLICATE_VALUE"
-            if error.message =~ /duplicate value found: (.*) duplicates/
-              resource.add_salesforce_error_for($1, error.message)
+            # Multiple errors are grouped by SF according to type, joined by ", ".
+            error.message.sub(/duplicate value found: /, '').split(', ').each do |msg|
+              if field = msg.match(/(.*) duplicates/)
+                resource.add_salesforce_error_for(field.captures.first, msg)
+              end
             end
           when "REQUIRED_FIELD_MISSING", "INVALID_EMAIL_ADDRESS"
             error.fields.each do |field|
