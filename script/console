@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require File.dirname(__FILE__) + '/../vendor/gems/environments/default'
+require File.dirname(__FILE__) + '/../vendor/gems/environment'
 require File.dirname(__FILE__)+'/../lib/dm-salesforce'
 require File.dirname(__FILE__)+'/../spec/fixtures/account'
 require File.dirname(__FILE__)+'/../spec/fixtures/contact'
