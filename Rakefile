@@ -4,6 +4,7 @@ require 'rubygems/specification'
 require 'bundler'
 require 'date'
 require 'pp'
+require 'tmpdir'
 
 Bundler.require_env
 require File.dirname(__FILE__) + '/lib/dm-salesforce'
@@ -55,7 +56,7 @@ Spec::Rake::SpecTask.new(:spec) do |t|
   t.spec_opts << '--loadby' << 'random'
   t.spec_files = %w(adapter connection models).collect { |dir| Dir["spec/#{dir}/**/*_spec.rb"] }.flatten
   t.rcov = ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true
-  t.rcov_opts << '--exclude' << '~/.salesforce,gems,spec,config,tmp'
+  t.rcov_opts << '--exclude' << "~/.salesforce,gems,vendor,/var/folders,spec,config,tmp"
   t.rcov_opts << '--text-summary'
   t.rcov_opts << '--sort' << 'coverage' << '--sort-reverse'
 end
