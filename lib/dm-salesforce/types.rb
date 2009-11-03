@@ -1,4 +1,4 @@
-module DataMapper::SalesForce
+module DataMapper::Salesforce
   class Type < ::DataMapper::Type
   end
 

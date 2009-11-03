@@ -1,4 +1,4 @@
-module DataMapper::SalesForce
+module DataMapper::Salesforce
   module Types
     class Serial < Type
       primitive ::String

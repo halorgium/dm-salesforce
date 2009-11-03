@@ -1,4 +1,4 @@
-module DataMapperSalesforce
+module DataMapper::Salesforce
   describe "Using the raw connection" do
     describe "when authenticating without an organization id" do
       describe "with the correct credentials" do

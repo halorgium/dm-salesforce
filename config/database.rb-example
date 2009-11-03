@@ -5,6 +5,6 @@ DataMapper.setup(:default, {:adapter  => 'salesforce',
                             :apidir  => ENV['SALESFORCE_DIR'] || "/tmp/dm-salesforce_#{$$}",
                             :host => ''})
 
-VALID_USER = DataMapperSalesforce::UserDetails.new('the-main-user@example.org'
+VALID_USER = DataMapper::Salesforce::UserDetails.new('the-main-user@example.org'
                                                    'PASSWORD')
-VALID_SELF_SERVICE_USER = DataMapperSalesforce::UserDetails.new("quentin@example.com", "foo")
+VALID_SELF_SERVICE_USER = DataMapper::Salesforce::UserDetails.new("quentin@example.com", "foo")

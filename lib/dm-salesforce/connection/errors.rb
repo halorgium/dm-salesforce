@@ -1,4 +1,4 @@
-module DataMapperSalesforce
+module DataMapper::Salesforce
   class Connection
     class Error             < StandardError; end
     class FieldNotFound     < Error; end
@@ -34,6 +34,12 @@ module DataMapperSalesforce
 
       def message_for_record(record)
         record.errors.map {|e| "#{e.statusCode}: #{e.message}"}.join(", ")
+      end
+
+      def service_unavailable?(records)
+        failed_records.any? do |record|
+          record.errors.any? {|e| e.statusCode == "SERVER_UNAVAILABLE"}
+        end
       end
     end
     class CreateError    < SOAPError; end

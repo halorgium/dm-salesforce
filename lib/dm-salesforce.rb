@@ -5,9 +5,12 @@ require 'soap/wsdlDriver'
 require 'soap/header/simplehandler'
 require "rexml/element"
 
+module DataMapper::Salesforce
+  UserDetails = Struct.new(:username, :password)
+end
+
 dir = File.expand_path(File.join(File.dirname(__FILE__), 'dm-salesforce'))
 
-require dir / :extensions
 require dir / :resource
 require dir / :connection
 require dir / :connection / :errors
@@ -18,8 +21,4 @@ require dir / :version
 
 require dir / :adapter
 
-DataMapper::Adapters::SalesforceAdapter = DataMapperSalesforce::Adapter
-
-module DataMapperSalesforce
-  UserDetails = Struct.new(:username, :password)
-end
+DataMapper::Adapters::SalesforceAdapter = DataMapper::Salesforce::Adapter

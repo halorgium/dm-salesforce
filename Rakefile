@@ -10,7 +10,7 @@ Bundler.require_env
 require File.dirname(__FILE__) + '/lib/dm-salesforce'
 
 GEM = "dm-salesforce"
-GEM_VERSION = DataMapperSalesforce::VERSION
+GEM_VERSION = DataMapper::Salesforce::VERSION
 AUTHORS = ["Yehuda Katz", 'Tim Carey-Smith']
 EMAIL = "wycats@gmail.com"
 HOMEPAGE = "http://www.yehudakatz.com"
@@ -54,7 +54,7 @@ desc "Run specs"
 Spec::Rake::SpecTask.new(:spec) do |t|
   t.spec_opts << %w(-fs --color) << %w(-O spec/spec.opts)
   t.spec_opts << '--loadby' << 'random'
-  t.spec_files = %w(adapter connection models).collect { |dir| Dir["spec/#{dir}/**/*_spec.rb"] }.flatten
+  t.spec_files = Dir["spec/**/*_spec.rb"]
   t.rcov = ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true
   t.rcov_opts << '--exclude' << "~/.salesforce,gems,vendor,/var/folders,spec,config,tmp"
   t.rcov_opts << '--text-summary'

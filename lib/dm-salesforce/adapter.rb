@@ -1,4 +1,4 @@
-module DataMapperSalesforce
+module DataMapper::Salesforce
   class Adapter < DataMapper::Adapters::AbstractAdapter
     include SQL
 
@@ -37,9 +37,8 @@ module DataMapperSalesforce
 
       result.size
 
-    rescue Connection::CreateError => e
-      populate_errors_for(e.records, resources)
-      e.successful_records.size
+    rescue Connection::SOAPError => e
+      handle_server_outage(e)
     end
 
     def update(attributes, collection)
@@ -48,9 +47,8 @@ module DataMapperSalesforce
 
       connection.update(arr).size
 
-    rescue Connection::UpdateError => e
-      populate_errors_for(e.records, arr, collection)
-      e.successful_records.size
+    rescue Connection::SOAPError => e
+      handle_server_outage(e)
     end
 
     def delete(collection)
@@ -58,40 +56,16 @@ module DataMapperSalesforce
       keys  = collection.map { |r| r.key }.flatten.uniq
 
       connection.delete(keys).size
+
+    rescue Connection::SOAPError => e
+      handle_server_outage(e)
     end
 
-    def populate_errors_for(records, resources, collection = nil)
-      records.each_with_index do |record,i|
-        next if record.success
-        resource = nil
-
-        if resources[i].is_a?(DataMapper::Resource)
-          resource = resources[i]
-        elsif collection && resources[i].is_a?(SalesforceAPI::SObject)
-          resource = collection.detect { |o| o.id = resources[i].id }
-        elsif resources[i].is_a?(SalesforceAPI::SObject)
-          resource = collection.detect { |o| o.id = resources[i].id }
-        else
-          resource = collection.detect {|o| o.id == resources[i]}
-        end
-
-        resource.class.send(:include, SalesforceExtensions)
-        record.errors.each do |error|
-          case error.statusCode
-          when "DUPLICATE_VALUE"
-            if error.message =~ /duplicate value found: (.*) duplicates/
-              resource.add_salesforce_error_for($1, error.message)
-            end
-          when "REQUIRED_FIELD_MISSING", "INVALID_EMAIL_ADDRESS"
-            error.fields.each do |field|
-              resource.add_salesforce_error_for(field, error.message)
-            end
-          when "SERVER_UNAVAILABLE"
-            raise Connection::ServerUnavailable, "The salesforce server is currently unavailable"
-          else
-            raise Connection::UnknownStatusCode, "Got an unknown statusCode: #{error.statusCode.inspect}"
-          end
-        end
+    def handle_server_outage(error)
+      if error.server_unavailable?
+        raise Connection::ServerUnavailable, "The salesforce server is currently unavailable"
+      else
+        raise error
       end
     end
 
@@ -182,6 +156,5 @@ module DataMapperSalesforce
       properties = Array(klass.send(:salesforce_id_properties)).map { |p| p.to_sym } rescue []
       return properties.include?(property.name) ? value[0..14] : value
     end
-
   end
 end

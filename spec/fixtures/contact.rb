@@ -1,5 +1,5 @@
 class Contact
-  include DataMapper::SalesForce::Resource
+  include DataMapper::Salesforce::Resource
 
   def self.default_repository_name
     :salesforce

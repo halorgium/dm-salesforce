@@ -1,4 +1,4 @@
-module DataMapperSalesforce
+module DataMapper::Salesforce
   class Connection
     class HeaderHandler < SOAP::Header::SimpleHandler
       def initialize(tag, value)

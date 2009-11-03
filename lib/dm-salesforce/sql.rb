@@ -1,4 +1,4 @@
-module DataMapperSalesforce
+module DataMapper::Salesforce
   module SQL
     def from_condition(condition, repository)
       slug = condition.class.slug
