@@ -1,8 +1,3 @@
-require 'soap/wsdlDriver'
-require 'soap/header/simplehandler'
-require "rexml/element"
-require 'dm-salesforce/soap_wrapper'
-
 module DataMapperSalesforce
   class Connection
     class HeaderHandler < SOAP::Header::SimpleHandler
@@ -141,5 +136,3 @@ module DataMapperSalesforce
     end
   end
 end
-
-require 'dm-salesforce/connection/errors'

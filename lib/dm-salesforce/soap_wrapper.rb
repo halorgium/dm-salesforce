@@ -1,5 +1,3 @@
-require "fileutils"
-
 module DataMapperSalesforce
   class SoapWrapper
     class ClassesFailedToGenerate < StandardError; end

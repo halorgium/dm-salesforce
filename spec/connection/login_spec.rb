@@ -20,7 +20,7 @@ module DataMapperSalesforce
     describe "when authenticating with an organization id" do
       describe "with the correct self service credentials" do
         it "succeeds" do
-          pending
+          pending "self service is no longer supported"
           db = DataMapper.repository(:salesforce).adapter.connection
           Connection.new(VALID_SELF_SERVICE_USER.username, VALID_SELF_SERVICE_USER.password, db.wsdl_path, db.api_dir, db.organization_id)
         end
@@ -28,6 +28,7 @@ module DataMapperSalesforce
 
       describe "with an invalid password" do
         it "fails to login" do
+          pending "self service is no longer supported"
           db = DataMapper.repository(:salesforce).adapter.connection
           lambda { Connection.new(VALID_SELF_SERVICE_USER.username, "bad-password", db.wsdl_path, db.api_dir, db.organization_id) }.
             should raise_error(Connection::LoginFailed)

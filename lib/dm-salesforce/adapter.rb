@@ -95,21 +95,6 @@ module DataMapperSalesforce
       end
     end
 
-    # A dummy method to allow migrations without upsetting any data
-    def destroy_model_storage(*args)
-      true
-    end
-
-    # A dummy method to allow auto_migrate! to run
-    def upgrade_model_storage(*args)
-      true
-    end
-
-    # A dummy method to allow migrations without upsetting any data
-    def create_model_storage(*args)
-      true
-    end
-
     # Reading responses back from SELECTS:
     #   In the typical case, response.size reflects the # of records returned.
     #   In the aggregation case, response.size reflects the count.
