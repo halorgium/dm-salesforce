@@ -24,5 +24,19 @@ describe DataMapper::Salesforce::SQL do
 
       account.reload.contacts.sort.should == contacts
     end
+
+    it 'SEL' do
+      Account.all(:name => 'seldude').destroy
+      accounts = 5.of { Account.gen(:name => 'seldude') }
+      accounts.each {|a| 5.of { Contact.gen(:account => a) } }
+
+      DataMapper.repository(:salesforce) do
+        Account.all(:name => 'seldude').each do |account|
+          account.contacts.each do |contact|
+            contact.account.should == account
+          end
+        end
+      end
+    end
   end
 end

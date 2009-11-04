@@ -38,8 +38,14 @@ module DataMapper::Salesforce
 
     def foreign_key_conditions(condition)
       subject = condition.subject.child_key.first
-      value = condition.value.send(condition.value.model.key.first.name)
-      DataMapper::Query::Conditions::EqualToComparison.new(subject, value)
+      case condition.value
+      when Array
+        value = condition.value.map {|m| m.send(m.model.key.first.name) }
+        DataMapper::Query::Conditions::InclusionComparison.new(subject, value)
+      else
+        value = condition.value.send(condition.value.model.key.first.name)
+        DataMapper::Query::Conditions::EqualToComparison.new(subject, value)
+      end
     end
 
     def storage_name(rel, repository)
