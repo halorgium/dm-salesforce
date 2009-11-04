@@ -14,6 +14,8 @@ class Account
   property :active,              Boolean, :field => 'Active_L_C__c'
   property :annual_revenue,      Float
   property :number_of_employees, Integer
+
+  has n, :contacts
 end
 
 Account.fix {{

@@ -19,7 +19,6 @@ only :test do
   gem 'bundler',      '~>0.6.0'
   gem 'ParseTree',                :require_as => 'parse_tree'
   gem 'dm-sweatshop'
-  gem 'dm-migrations'
 end
 
 # vim:ft=ruby

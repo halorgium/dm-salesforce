@@ -18,5 +18,10 @@ describe DataMapper::Salesforce::SQL do
     it 'implements :lte' do
       query.first(:number_of_employees.lte => 10).should_not be_nil
     end
+
+    it 'scopes contacts to account' do
+      contacts = 5.of { Contact.gen(:account => account) }
+      account.reload.contacts.should == contacts
+    end
   end
 end

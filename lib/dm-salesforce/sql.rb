@@ -36,6 +36,12 @@ module DataMapper::Salesforce
       end
     end
 
+    def foreign_key_conditions(condition)
+      subject = condition.subject.child_key.first
+      value = condition.value.send(condition.value.model.key.first.name)
+      DataMapper::Query::Conditions::EqualToComparison.new(subject, value)
+    end
+
     def storage_name(rel, repository)
       rel.parent_model.storage_name(repository.name)
     end
