@@ -1,17 +1,21 @@
 module DataMapper::Salesforce
   module Types
     class Boolean < Type
-      primitive ::String
+      primitive TrueClass
       default false
 
       def self.dump(value, property)
-        value.nil? ? '0' : value
+        case value
+        when nil, false then '0'
+        else value
+        end
       end
 
       def self.load(value, property)
         case value
-        when TrueClass  then value
-        when String     then value == '1' || value == 'true'
+        when TrueClass    then value
+        when '1', 'true'  then true
+        else false
         end
       end
     end

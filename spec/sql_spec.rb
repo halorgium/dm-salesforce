@@ -20,8 +20,9 @@ describe DataMapper::Salesforce::SQL do
     end
 
     it 'scopes contacts to account' do
-      contacts = 5.of { Contact.gen(:account => account) }
-      account.reload.contacts.should == contacts
+      contacts = 5.of { Contact.gen(:account => account) }.sort
+
+      account.reload.contacts.sort.should == contacts
     end
   end
 end

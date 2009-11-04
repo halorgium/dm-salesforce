@@ -36,7 +36,7 @@ module DataMapper::Salesforce
         record.errors.map {|e| "#{e.statusCode}: #{e.message}"}.join(", ")
       end
 
-      def service_unavailable?(records)
+      def server_unavailable?
         failed_records.any? do |record|
           record.errors.any? {|e| e.statusCode == "SERVER_UNAVAILABLE"}
         end

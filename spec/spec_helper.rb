@@ -13,4 +13,5 @@ FileUtils.mkdir_p(sf_dir)
 
 load File.expand_path(root + '/config/database.rb')
 log_file = File.open(File.expand_path(File.dirname(__FILE__) / '..' / 'tmp' / 'test.log'), 'w')
+log_file.sync = true
 DataMapper::Logger.new(log_file, 0)
