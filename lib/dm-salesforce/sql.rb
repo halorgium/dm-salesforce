@@ -37,13 +37,19 @@ module DataMapper::Salesforce
     end
 
     def foreign_key_conditions(condition)
-      subject = condition.subject.child_key.first
+      subject = case condition.subject
+        when DataMapper::Associations::ManyToOne::Relationship
+          condition.subject.child_key.first
+        else
+          condition.subject.parent_key.first
+        end
+
       case condition.value
       when Array
-        value = condition.value.map {|m| m.send(m.model.key.first.name) }
+        value = condition.send(:expected).flatten
         DataMapper::Query::Conditions::InclusionComparison.new(subject, value)
       else
-        value = condition.value.send(condition.value.model.key.first.name)
+        value = condition.send(:expected)
         DataMapper::Query::Conditions::EqualToComparison.new(subject, value)
       end
     end

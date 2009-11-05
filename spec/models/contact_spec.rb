@@ -22,11 +22,30 @@ describe "Finding a Contact" do
 end
 
 describe "Creating a Contact" do
+
+  describe "specifying an account to associate with" do
+    let(:account) { Account.gen }
+    describe "using the object" do
+      it 'is valid' do
+        contact = Contact.create(:first_name => 'Per', :last_name => 'Son', :email => "person@company.com", :account => account)
+        contact.should be_valid
+        contact.account.should eql(account)
+      end
+    end
+    describe "using the id" do
+      it 'is valid' do
+        contact = Contact.create(:first_name => 'Per', :last_name => 'Son', :email => "person@company.com", :account_id => account.id)
+        contact.should be_valid
+        contact.account.should eql(account)
+      end
+    end
+  end
+
   describe "when the email address is invalid" do
     it "is invalid" do
-      c = Contact.gen(:email => "person")
-      c.should_not be_valid
-      c.errors.should have_key(:email)
+      contact = Contact.gen(:email => "person")
+      contact.should_not be_valid
+      contact.errors.should have_key(:email)
     end
   end
 
@@ -46,9 +65,9 @@ describe "Creating a Contact" do
 
   describe "when the last name is missing" do
     it "is invalid" do
-      c = Contact.create(:first_name => 'Per', :email => "person@company.com")
-      c.should_not be_valid
-      c.errors.should have_key(:last_name)
+      contact = Contact.create(:first_name => 'Per', :email => "person@company.com")
+      contact.should_not be_valid
+      contact.errors.should have_key(:last_name)
     end
   end
 end

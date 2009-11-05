@@ -20,15 +20,15 @@ describe DataMapper::Salesforce::SQL do
     end
 
     it 'scopes contacts to account' do
-      contacts = 5.of { Contact.gen(:account => account) }.sort
+      contacts = 3.of { Contact.gen(:account => account) }.sort
 
-      account.reload.contacts.sort.should == contacts
+      account.contacts.sort.should eql(contacts)
     end
 
-    it 'SEL' do
+    it 'strategic eager loads models' do
       Account.all(:name => 'seldude').destroy
-      accounts = 5.of { Account.gen(:name => 'seldude') }
-      accounts.each {|a| 5.of { Contact.gen(:account => a) } }
+      accounts = 3.of { Account.gen(:name => 'seldude') }
+      accounts.each {|a| 3.of { Contact.gen(:account => a) } }
 
       DataMapper.repository(:salesforce) do
         Account.all(:name => 'seldude').each do |account|
