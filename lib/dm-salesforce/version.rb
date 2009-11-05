@@ -1,3 +1,3 @@
 module DataMapper::Salesforce
-  VERSION = "0.10.0.pre"
+  VERSION = "0.10.0"
 end
