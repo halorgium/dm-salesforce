@@ -1,7 +1,8 @@
 dm-salesforce
 =============
 
-A gem that provides a Salesforce Adapter for DataMapper.
+A gem that provides a Salesforce Adapter for DataMapper 0.10.x.
+There are older versions of dm-salesforce specifically for 0.9.x.
 
 The wsdl is automatically converted into Ruby classes upon the first
 invocation of the dm-salesforce adapter.  The classes in turn get
@@ -88,6 +89,7 @@ Special Thanks to those who helped
 * Ben Burkert
 * Larry Diehl
 * Jordan Ritter
+* Martin Emde
 
 [setup]: http://img.skitch.com/20090204-gaxdfxbi1emfita5dax48ids4m.jpg "Click on Setup"
 [getwsdl]: http://img.skitch.com/20090204-nhurnuxwf5g3ufnjk2xkfjc5n4.jpg "Expand and Save"
