@@ -11,10 +11,10 @@ class Contact
 
   property :id,                         Serial
   property :first_name,                 String
-  property :last_name,                  String, :nullable => false
+  property :last_name,                  String, :required => true
   property :email,                      String, :format   => :email_address
   property :account_id,                 String
-  property :irc_nick,                   String, :nullable => true, :unique => true
+  property :irc_nick,                   String, :required => false, :unique => true
   property :has_opted_out_of_email,     Boolean
 
   belongs_to :account

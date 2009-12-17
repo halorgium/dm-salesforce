@@ -1,7 +1,7 @@
 module DataMapper::Salesforce
   module Types
     class Boolean < Type
-      primitive TrueClass
+      primitive String
       default false
 
       def self.dump(value, property)

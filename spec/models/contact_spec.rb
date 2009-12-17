@@ -128,8 +128,9 @@ describe "Updating a Contact" do
     end
     it "should update" do
       contact = Contact.gen(:first_name => 'OptOutEr', :has_opted_out_of_email => true)
-      lambda { contact.update(:has_opted_out_of_email => false) }.
-        should change { DataMapper.repository(:salesforce) { Contact.get(contact.id).has_opted_out_of_email } }
+
+      contact.update(:has_opted_out_of_email => false)
+      Contact.get(contact.id).has_opted_out_of_email.should be_false
     end
   end
 end

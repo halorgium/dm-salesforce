@@ -45,7 +45,7 @@ module DataMapper::Salesforce
         end
 
       case condition.value
-      when Array
+      when Array, DataMapper::Collection
         value = condition.send(:expected).flatten
         DataMapper::Query::Conditions::InclusionComparison.new(subject, value)
       else
