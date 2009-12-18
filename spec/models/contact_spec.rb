@@ -19,6 +19,10 @@ describe "Finding a Contact" do
     Contact.get(valid_id).should_not be_nil
     Contact.get(valid_id).should be_valid
   end
+
+  it "handles not operator" do
+    Contact.first(:id.not => valid_id).should_not == Contact.get(valid_id)
+  end
 end
 
 describe "Creating a Contact" do
@@ -131,6 +135,26 @@ describe "Updating a Contact" do
 
       contact.update(:has_opted_out_of_email => false)
       Contact.get(contact.id).has_opted_out_of_email.should be_false
+    end
+  end
+
+  describe "when updating a boolean field to true" do
+    before(:each) do
+      Contact.all(:first_name => 'OptOutEr').destroy
+    end
+    it "should update" do
+      contact = Contact.gen(:first_name => 'OptOutEr', :has_opted_out_of_email => false)
+
+      contact.update(:has_opted_out_of_email => true)
+      Contact.get(contact.id).has_opted_out_of_email.should be_true
+    end
+  end
+
+  describe "filtering on account_id and active" do
+    it 'passes' do
+      account = Account.first
+      contact = Contact.create(:first_name => 'Per', :last_name => 'Son', :email => "person@company.com", :account_id => account.id, :active => true)
+      Contact.all(:account_id => account.id, :active => true).should include(contact)
     end
   end
 end

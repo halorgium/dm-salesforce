@@ -110,7 +110,7 @@ module DataMapper::Salesforce
     private
     def execute_query(query)
       repository = query.repository
-      conditions = query.conditions.map {|c| from_condition(c, repository)}.compact.join(") AND (")
+      conditions = query.conditions.map {|c| conditions_statement(c, repository)}.compact.join(") AND (")
 
       fields = query.fields.map do |f|
         case f
