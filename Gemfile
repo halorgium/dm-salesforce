@@ -8,7 +8,6 @@ gem "extlib",         "~> 0.9.9"
 gem "dm-core",        "~> 0.10.1"
 gem "dm-validations", "~> 0.10.1"
 gem "dm-types",       "~> 0.10.1"
-gem "do_sqlite3",     "~> 0.10.0"
 gem "soap4r",         "~> 1.5.8", :require_as => [ ]
 
 only :test do
