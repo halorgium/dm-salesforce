@@ -1,4 +1,3 @@
-require File.dirname(__FILE__) + '/vendor/gems/environment'
 require 'rake/gempackagetask'
 require 'rubygems/specification'
 require 'bundler'
@@ -6,7 +5,7 @@ require 'date'
 require 'pp'
 require 'tmpdir'
 
-Bundler.require_env
+Bundler.require(:default, :runtime)
 require File.dirname(__FILE__) + '/lib/dm-salesforce'
 
 GEM = "dm-salesforce"
@@ -28,10 +27,10 @@ SUMMARY = "A DataMapper adapter to the Salesforce API"
   s.email = EMAIL
   s.homepage = HOMEPAGE
 
-  manifest = Bundler::Environment.load(File.dirname(__FILE__) + '/Gemfile')
-  manifest.dependencies.each do |d|
-    next if d.only && d.only.include?('test')
-    s.add_dependency(d.name, d.version)
+  bundle = Bundler::Definition.from_gemfile('Gemfile')
+  bundle.dependencies.each do |dep|
+    next unless dep.groups.include?(:runtime)
+    s.add_dependency(dep.name, dep.version_requirements.to_s)
   end
 
   s.require_path = 'lib'
