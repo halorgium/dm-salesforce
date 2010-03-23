@@ -89,8 +89,9 @@ To quickly test programmatic access with the DataMapper Salesforce adapter, foll
 * Run 'ruby example.rb' and you should have access to the Account and Contact models (schema differences withstanding)
 
 Don't forget:
-* Don't forget to retrieve a new copy of your WSDL anytime you change your Salesforce schema
-* Don't forget to reset/wipe the auto-generated SOAP classes anytime you update your WSDL
+
+* To retrieve a new copy of your WSDL anytime you change your Salesforce schema
+* To reset/wipe the auto-generated SOAP classes anytime you update your WSDL
 
 
 Special Thanks to those who helped
