@@ -1,15 +1,15 @@
-require File.dirname(__FILE__) + '/vendor/gems/environment'
 require 'rake/gempackagetask'
 require 'rubygems/specification'
 require 'bundler'
 require 'date'
 require 'pp'
+require 'tmpdir'
 
-Bundler.require_env
+Bundler.require(:default, :runtime)
 require File.dirname(__FILE__) + '/lib/dm-salesforce'
 
 GEM = "dm-salesforce"
-GEM_VERSION = DataMapperSalesforce::VERSION
+GEM_VERSION = DataMapper::Salesforce::VERSION
 AUTHORS = ["Yehuda Katz", 'Tim Carey-Smith']
 EMAIL = "wycats@gmail.com"
 HOMEPAGE = "http://www.yehudakatz.com"
@@ -27,10 +27,10 @@ SUMMARY = "A DataMapper adapter to the Salesforce API"
   s.email = EMAIL
   s.homepage = HOMEPAGE
 
-  manifest = Bundler::Environment.load(File.dirname(__FILE__) + '/Gemfile')
-  manifest.dependencies.each do |d|
-    next if d.only && d.only.include?('test')
-    s.add_dependency(d.name, d.version)
+  bundle = Bundler::Definition.from_gemfile('Gemfile')
+  bundle.dependencies.each do |dep|
+    next unless dep.groups.include?(:runtime)
+    s.add_dependency(dep.name, dep.version_requirements.to_s)
   end
 
   s.require_path = 'lib'
@@ -53,9 +53,9 @@ desc "Run specs"
 Spec::Rake::SpecTask.new(:spec) do |t|
   t.spec_opts << %w(-fs --color) << %w(-O spec/spec.opts)
   t.spec_opts << '--loadby' << 'random'
-  t.spec_files = %w(adapter connection models).collect { |dir| Dir["spec/#{dir}/**/*_spec.rb"] }.flatten
+  t.spec_files = Dir["spec/**/*_spec.rb"]
   t.rcov = ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true
-  t.rcov_opts << '--exclude' << '~/.salesforce,gems,spec,config,tmp'
+  t.rcov_opts << '--exclude' << "~/.salesforce,gems,vendor,/var/folders,spec,config,tmp"
   t.rcov_opts << '--text-summary'
   t.rcov_opts << '--sort' << 'coverage' << '--sort-reverse'
 end

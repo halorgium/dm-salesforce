@@ -1,9 +1,4 @@
-require 'soap/wsdlDriver'
-require 'soap/header/simplehandler'
-require "rexml/element"
-require 'dm-salesforce/soap_wrapper'
-
-module DataMapperSalesforce
+module DataMapper::Salesforce
   class Connection
     class HeaderHandler < SOAP::Header::SimpleHandler
       def initialize(tag, value)
@@ -142,5 +137,3 @@ module DataMapperSalesforce
     end
   end
 end
-
-require 'dm-salesforce/connection/errors'

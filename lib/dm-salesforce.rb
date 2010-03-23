@@ -1,15 +1,24 @@
-$:.push File.expand_path(File.dirname(__FILE__))
-
+require "fileutils"
 require 'dm-core'
 require 'dm-validations'
-require 'dm-salesforce/sql'
-require 'dm-salesforce/extensions'
-require 'dm-salesforce/adapter'
-require 'dm-salesforce/connection'
-require 'dm-salesforce/version'
+require 'soap/wsdlDriver'
+require 'soap/header/simplehandler'
+require "rexml/element"
 
-DataMapper::Adapters::SalesforceAdapter = DataMapperSalesforce::Adapter
-
-module DataMapperSalesforce
+module DataMapper::Salesforce
   UserDetails = Struct.new(:username, :password)
 end
+
+dir = File.expand_path(File.join(File.dirname(__FILE__), 'dm-salesforce'))
+
+require dir / :resource
+require dir / :connection
+require dir / :connection / :errors
+require dir / :soap_wrapper
+require dir / :sql
+require dir / :types
+require dir / :version
+
+require dir / :adapter
+
+DataMapper::Adapters::SalesforceAdapter = DataMapper::Salesforce::Adapter
