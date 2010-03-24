@@ -4,7 +4,6 @@ module DataMapper::Salesforce
       primitive Integer
       FALSE = 0
       TRUE  = 1
-      default false
 
       def self.dump(value, property)
         case value
