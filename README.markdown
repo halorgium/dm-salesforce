@@ -1,22 +1,11 @@
 dm-salesforce
 =============
 
-A gem that provides a Salesforce Adapter for DataMapper 0.10.x.
-There are older versions of dm-salesforce specifically for 0.9.x.
+A gem that provides a Salesforce Adapter for DataMapper 0.10.x.  There are older versions
+of dm-salesforce specifically for 0.9.x, but they are no longer supported.
 
-The WSDL is automatically converted into Ruby classes upon the first
-invocation of the dm-salesforce adapter.  The classes in turn get
-cached locally in one of the following locations, in order of
-precedence:
-
-    :repositories:salesforce:apidir (see included database.yml-example)
-    ENV["SALESFORCE_DIR"]
-    ~/.salesforce/
-
-It should just work if you have the WSDL file.  Directions for getting going are outlined
-below.
-
-A quick example of using the adapter (schema differences withstanding):
+What it looks like
+==================
 
     class Account
       include DataMapper::Salesforce::Resource
@@ -25,7 +14,7 @@ A quick example of using the adapter (schema differences withstanding):
         :salesforce
       end
 
-      # Old method for stipulating which fields are Salesforce-style IDs.  Alternatively,
+      # Old method for declaring which fields are Salesforce-style IDs.  Alternatively,
       # can use the Salesforce-specific Serial custom DM type (see next model).
       def self.salesforce_id_properties
         :id
@@ -68,30 +57,56 @@ A quick example of using the adapter (schema differences withstanding):
     account.is_awesome = true
     account.save
 
+See [the fixtures](http://github.com/jpr5/dm-salesforce/tree/master/spec/fixtures) for more
+examples.
 
-To quickly test programmatic access with the DataMapper Salesforce adapter, follow these steps:
+How it works
+============
 
-* Obtain a working salesforce.com account
-* Get a security token (if you don't already have one)
-  * Login to https://login.salesforce.com
-  * [Click "Setup"][setup]
-  * [Click "Personal Setup" / "My Personal Information" / "Reset My Security Token"][gettoken]
-   * This will send a message to your account's email address with an "API key" (looks like a 24 character hash)
-* Get the Enterprise WSDL for your object model
-  * Login to https://login.salesforce.com
-  * [Click "Setup"][setup]
-  * [Click "App Setup" / "Develop" / "API"][getwsdl]
-  * Click "Generate Enterprise WSDL", then click the "Generate" button
-  * Save that to to an .xml file somewhere (path/extension doesn't matter - you specify it in database.yml / DataMapper.setup)
-* Copy and modify config/example.rb to use your info
- * The :password field is the concatenation of your login password and the API key
- * If your password is 'skateboards' and API key is 'f938915c9cdc36ff5498881b', then the :password field you pass to DataMapper.setup should be 'skateboardsf938915c9cdc36ff5498881b'
-* Run 'ruby example.rb' and you should have access to the Account and Contact models (schema differences withstanding)
+Salesforce provides an XML-based WSDL definition of an existing schema/object model for
+download.  The dm-salesforce adapter uses this WSDL to auto-generate a SOAP-based Ruby
+driver and classes, which is then used to implement a basic, low-level DataMapper Adapter.
 
-Don't forget:
+Upon first access, the driver and classes are cached locally on disk in one of the
+following locations (in order of precedence):
 
-* To retrieve a new copy of your WSDL anytime you change your Salesforce schema
-* To reset/wipe the auto-generated SOAP classes anytime you update your WSDL
+  * In `apidir`, defined in `database.yml` (see included database.yml-example)
+  * In `ENV['SALESFORCE_DIR']`
+  * In `ENV['HOME']/.salesforce/`
+
+Getting set up
+==============
+
+1. Obtain a working salesforce.com account
+
+2. Get a valid security token (if you don't already have one)
+    * Login to `https://login.salesforce.com`
+    * [Click "Setup"][setup]
+    * [Click "Personal Setup" / "My Personal Information" / "Reset My Security Token"][gettoken]
+        * This will send a message to your account's email address with an "API key"
+          (looks like a 24 character token)
+
+3. Get the Enterprise WSDL for your object model
+    * Login to `https://login.salesforce.com`
+    * [Click "Setup"][setup]
+    * [Click "App Setup" / "Develop" / "API"][getwsdl]
+    * Click "Generate Enterprise WSDL", then click the "Generate" button
+    * Save that to an .xml file somewhere (path/extension doesn't matter - you specify it
+      in database.yml / DataMapper.setup)
+
+4. Copy and modify config/example.rb to use your info
+    * The :password field is the concatenation of your login password and the API key
+    * If your password is 'skateboards' and API key is 'f938915c9cdc36ff5498881b', then
+      the :password field you specify to DataMapper.setup should be
+      'skateboardsf938915c9cdc36ff5498881b'
+
+Run 'ruby example.rb' and you should have access to the Account and Contact models (schema
+differences withstanding).
+
+**Don't forget to:**
+
+* Retrieve a new copy of your WSDL anytime you make changes to your Salesforce schema
+* Wipe the auto-generated SOAP classes anytime you update your WSDL
 
 
 Special Thanks to those who helped
