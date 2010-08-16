@@ -83,9 +83,9 @@ module DataMapper::Salesforce
     end
 
     def quote_value(value, property)
-      if property.type == DataMapper::Salesforce::Types::Boolean
+      if property.type == DataMapper::Salesforce::Property::Boolean
         # True on salesforce needs to be TRUE/FALSE for WHERE clauses but not for inserts.
-        return value == DataMapper::Salesforce::Types::Boolean::TRUE ? 'TRUE' : 'FALSE'
+        return value == DataMapper::Salesforce::Property::Boolean::TRUE ? 'TRUE' : 'FALSE'
       end
 
       case value

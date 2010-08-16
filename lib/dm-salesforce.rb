@@ -16,9 +16,13 @@ require dir / :connection
 require dir / :connection / :errors
 require dir / :soap_wrapper
 require dir / :sql
-require dir / :types
 require dir / :version
-
 require dir / :adapter
+
+case DataMapper::VERSION
+when /^0\.10/ then require dir / :types
+when /^1\.0/  then require dir / :property
+else raise "DataMapper #{DataMapper::VERSION} is an unsupported version"
+end
 
 DataMapper::Adapters::SalesforceAdapter = DataMapper::Salesforce::Adapter
