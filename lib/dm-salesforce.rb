@@ -20,8 +20,12 @@ require dir / :version
 require dir / :adapter
 
 case DataMapper::VERSION
-when /^0\.10/ then require dir / :types
-when /^1\.0/  then require dir / :property
+when /^0\.10/ then
+    require dir / :types
+    ::DataMapper::Salesforce::Inflector = ::Extlib::Inflection
+when /^1\.0/  then
+    require dir / :property
+    ::DataMapper::Salesforce::Inflector = ::DataMapper::Inflector
 else raise "DataMapper #{DataMapper::VERSION} is an unsupported version"
 end
 

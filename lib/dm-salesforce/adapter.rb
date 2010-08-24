@@ -5,7 +5,7 @@ module DataMapper::Salesforce
     def initialize(name, uri_or_options)
       super
       @resource_naming_convention = proc do |value|
-        klass = Extlib::Inflection.constantize(value)
+        klass = Inflector.constantize(value)
         if klass.respond_to?(:salesforce_class)
           klass.salesforce_class
         else
