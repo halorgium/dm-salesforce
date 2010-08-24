@@ -4,6 +4,8 @@ module DataMapper::Salesforce
 
   module Types
   end
+
+  Property = Types
 end
 
 require 'dm-salesforce/types/serial'
