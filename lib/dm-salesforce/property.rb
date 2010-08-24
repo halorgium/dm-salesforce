@@ -3,10 +3,7 @@ module DataMapper::Salesforce
   end
 end
 
-dir = File.expand_path(File.dirname(__FILE__) / :property)
-
-require dir / :serial
-require dir / :boolean
-require dir / :integer
-require dir / :float
-
+require 'dm-salesforce/property/serial'
+require 'dm-salesforce/property/boolean'
+require 'dm-salesforce/property/integer'
+require 'dm-salesforce/property/float'

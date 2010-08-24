@@ -1,30 +1,28 @@
-require "fileutils"
+require 'fileutils'
 require 'dm-core'
 require 'dm-validations'
 require 'soap/wsdlDriver'
 require 'soap/header/simplehandler'
-require "rexml/element"
+require 'rexml/element'
 
 module DataMapper::Salesforce
   UserDetails = Struct.new(:username, :password)
 end
 
-dir = File.expand_path(File.join(File.dirname(__FILE__), 'dm-salesforce'))
-
-require dir / :resource
-require dir / :connection
-require dir / :connection / :errors
-require dir / :soap_wrapper
-require dir / :sql
-require dir / :version
-require dir / :adapter
+require 'dm-salesforce/resource'
+require 'dm-salesforce/connection'
+require 'dm-salesforce/connection/errors'
+require 'dm-salesforce/soap_wrapper'
+require 'dm-salesforce/sql'
+require 'dm-salesforce/version'
+require 'dm-salesforce/adapter'
 
 case DataMapper::VERSION
 when /^0\.10/ then
-    require dir / :types
+    require 'dm-salesforce/types'
     ::DataMapper::Salesforce::Inflector = ::Extlib::Inflection
 when /^1\.0/  then
-    require dir / :property
+    require 'dm-salesforce/property'
     ::DataMapper::Salesforce::Inflector = ::DataMapper::Inflector
 else raise "DataMapper #{DataMapper::VERSION} is an unsupported version"
 end
