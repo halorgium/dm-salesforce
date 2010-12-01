@@ -31,8 +31,10 @@ describe "Account" do
         account.active.should_not be_true
       end
 
-      it 'has no annual revenue by default' do
-        account.annual_revenue.should eql(0.0)
+      it 'floats can be nil' do
+        account.annual_revenue = nil
+        account.should be_valid
+        account.annual_revenue.should be_nil
       end
     end
     describe "successful creation with on-offs" do
