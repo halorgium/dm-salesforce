@@ -1,8 +1,15 @@
 dm-salesforce
 =============
 
-A gem that provides a Salesforce Adapter for DataMapper 0.10.x and 1.0.x.  There are older
-versions of dm-salesforce specifically for 0.9.x, but they are no longer supported.
+A gem that provides a Salesforce Adapter for DataMapper 0.10.x, and basic 1.0.x
+support.
+
+If you're looking for ongoing DM1 support,
+[dm-salesforce-adapter](http://github.com/cloudcrowd/dm-salesforce-adapter) is
+actively maintained to support it so use that instead.
+
+There are older versions of dm-salesforce specifically for 0.9.x, but they are
+no longer supported.
 
 What it looks like
 ==================
